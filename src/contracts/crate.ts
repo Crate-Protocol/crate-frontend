@@ -13,7 +13,9 @@ const NETWORK_PASS  = (import.meta.env.VITE_NETWORK     as string) === "MAINNET"
   ? "Public Global Stellar Network ; September 2015"
   : "Test SDF Network ; September 2015";
 
-function server() { return new SorobanRpc.Server(RPC_URL, { allowHttp: true }); }
+function server() {
+  return new SorobanRpc.Server(RPC_URL, { allowHttp: RPC_URL.startsWith("http://") });
+}
 
 async function read<T>(sourceAddress: string, op: ReturnType<Contract["call"]>): Promise<T | null> {
   const src = await server().getAccount(sourceAddress).catch(() => null);
