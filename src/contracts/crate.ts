@@ -7,6 +7,27 @@ import {
   Address,
 } from "@stellar/stellar-sdk";
 
+export interface SampleData {
+  id:              number;
+  uploader:        string;
+  title:           string;
+  ipfs_cid:        string;
+  lease_price:     bigint;
+  premium_price:   bigint;
+  exclusive_price: bigint;
+  genre:           string;
+  bpm:             number;
+  is_exclusive:    boolean;
+  total_sales:     number;
+  price:           bigint;
+  active:          boolean;
+  sales_count:     bigint;
+}
+
+export function stroopsToXlm(stroops: bigint): string {
+  return (Number(stroops) / 1e7).toFixed(2);
+}
+
 const CONTRACT_ID   = (import.meta.env.VITE_CONTRACT_ID as string) ?? "";
 const RPC_URL       = (import.meta.env.VITE_RPC_URL     as string) ?? "https://soroban-testnet.stellar.org";
 const NETWORK_PASS  = (import.meta.env.VITE_NETWORK     as string) === "MAINNET"
