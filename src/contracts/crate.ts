@@ -88,3 +88,58 @@ export async function buildWithdrawTx(producer: string): Promise<{ preparedXdr: 
   const prepared = await server().prepareTransaction(tx);
   return { preparedXdr: prepared.toXDR() };
 }
+
+export async function getSample(sourceAddress: string, sampleId: bigint): Promise<SampleData | null> {
+  if (!CONTRACT_ID) return null;
+  const c = new Contract(CONTRACT_ID);
+  return read<SampleData>(sourceAddress, c.call("get_sample", nativeToScVal(Number(sampleId), { type: "u32" })));
+}
+
+export async function submitTransaction(signed: { signedTxXdr: string }): Promise<string> {
+  const { StellarBase } = await import("@stellar/stellar-sdk");
+  const tx = StellarBase.TransactionEnvelope.fromXDR(signed.signedTxXdr, "base64");
+  const result = await server().sendTransaction(tx as Parameters<typeof server>["prototype"]["sendTransaction"][0]);
+  if (result.status === "ERROR") throw new Error("Transaction submission failed");
+  return result.hash;
+}
+
+export async function uploadSample(params: {
+  uploader: string; title: string; ipfsCid: string;
+  priceXlm: number; genre: string; bpm: number;
+}): Promise<string> {
+  const src = await server().getAccount(params.uploader);
+  const c   = new Contract(CONTRACT_ID);
+  const stroops = BigInt(Math.round(params.priceXlm * 1e7));
+  const tx  = new TransactionBuilder(src, { fee: "1000000", networkPassphrase: NETWORK_PASS })
+    .addOperation(c.call("upload_sample",
+      new Address(params.uploader).toScVal(),
+      nativeToScVal(params.title,    { type: "string" }),
+      nativeToScVal(params.ipfsCid,  { type: "string" }),
+      nativeToScVal(stroops,         { type: "i128" }),
+      nativeToScVal(stroops * 5n,    { type: "i128" }),
+      nativeToScVal(stroops * 20n,   { type: "i128" }),
+      nativeToScVal(params.genre,    { type: "string" }),
+      nativeToScVal(params.bpm,      { type: "u32" }),
+    )).setTimeout(300).build();
+  const prepared = await server().prepareTransaction(tx);
+  return prepared.toXDR();
+}
+
+export async function purchaseSample(params: { buyer: string; sampleId: number; tier?: number }): Promise<string> {
+  const src  = await server().getAccount(params.buyer);
+  const c    = new Contract(CONTRACT_ID);
+  const tier = params.tier ?? 0;
+  const tx   = new TransactionBuilder(src, { fee: "1000000", networkPassphrase: NETWORK_PASS })
+    .addOperation(c.call("purchase_license",
+      new Address(params.buyer).toScVal(),
+      nativeToScVal(params.sampleId, { type: "u32" }),
+      nativeToScVal(tier,            { type: "u32" }),
+    )).setTimeout(300).build();
+  const prepared = await server().prepareTransaction(tx);
+  return prepared.toXDR();
+}
+
+export async function withdrawEarnings(producer: string): Promise<string> {
+  const { preparedXdr } = await buildWithdrawTx(producer);
+  return preparedXdr;
+}
