@@ -49,12 +49,12 @@ async function read<T>(sourceAddress: string, op: ReturnType<Contract["call"]>):
   return retval ? scValToNative(retval) as T : null;
 }
 
-export async function getStats(): Promise<{ totalSamples: number; totalVolume: string }> {
-  if (!CONTRACT_ID) return { totalSamples: 0, totalVolume: "0" };
+export async function getStats(): Promise<{ totalSamples: number; totalVolume: string; totalProducers: number }> {
+  if (!CONTRACT_ID) return { totalSamples: 0, totalVolume: "0", totalProducers: 0 };
   const c   = new Contract(CONTRACT_ID);
-  const res = await read<[number, bigint]>(CONTRACT_ID, c.call("get_stats"));
-  if (!res) return { totalSamples: 0, totalVolume: "0" };
-  return { totalSamples: res[0], totalVolume: (Number(res[1]) / 1e7).toFixed(2) };
+  const res = await read<[number, bigint, number]>(CONTRACT_ID, c.call("get_stats"));
+  if (!res) return { totalSamples: 0, totalVolume: "0", totalProducers: 0 };
+  return { totalSamples: res[0], totalVolume: (Number(res[1]) / 1e7).toFixed(2), totalProducers: res[2] };
 }
 
 export async function getEarnings(address: string): Promise<number> {
