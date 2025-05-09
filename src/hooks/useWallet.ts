@@ -31,6 +31,8 @@ interface WalletState {
   address: string | null;
   balance: string;
   isConnecting: boolean;
+  isLoading: boolean;
+  isConnected: boolean;
   connect: () => Promise<void>;
   disconnect: () => void;
   signTransaction: (xdr: string) => Promise<{ signedTxXdr: string }>;
@@ -79,5 +81,7 @@ export function useWallet(): WalletState {
     return { signedTxXdr };
   }, []);
 
-  return { address, balance, isConnecting, connect, disconnect, signTransaction };
+  const isConnected = address !== null;
+  const isLoading   = isConnecting;
+  return { address, balance, isConnecting, isLoading, isConnected, connect, disconnect, signTransaction };
 }
