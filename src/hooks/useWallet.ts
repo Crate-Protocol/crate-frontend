@@ -54,7 +54,12 @@ export function useWallet(): WalletState {
 
   useEffect(() => {
     const saved = localStorage.getItem("crate_wallet");
-    if (saved) { setAddress(saved); void fetchBalance(saved); }
+    if (saved && /^G[A-Z2-7]{55}$/.test(saved)) {
+      setAddress(saved);
+      void fetchBalance(saved);
+    } else if (saved) {
+      localStorage.removeItem("crate_wallet");
+    }
   }, [fetchBalance]);
 
   const connect = useCallback(async () => {
