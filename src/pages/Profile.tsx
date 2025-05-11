@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 
 export default function Profile() {
   const { address, isConnected, connect, disconnect, signTransaction } = useWallet();
-  const [earnings, setEarnings] = useState<bigint>(0n);
+  const [earnings, setEarnings] = useState<number>(0);
   const [loadingEarnings, setLoadingEarnings] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -21,7 +21,7 @@ export default function Profile() {
     if (!address) return;
     setLoadingEarnings(true);
     try {
-      const e = await getEarnings(address, address);
+      const e = await getEarnings(address);
       setEarnings(e);
     } catch {
       toast.error("Failed to load earnings");
