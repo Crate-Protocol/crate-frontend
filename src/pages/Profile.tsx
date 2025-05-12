@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Wallet, TrendingUp, Music, ArrowDownToLine, Copy, CheckCircle } from "lucide-react";
 import { useWallet } from "../hooks/useWallet";
-import { getEarnings, withdrawEarnings, submitTransaction, stroopsToXlm } from "../contracts/crate";
+import { getEarnings, withdrawEarnings, submitTransaction } from "../contracts/crate";
 import toast from "react-hot-toast";
 
 export default function Profile() {
@@ -32,7 +32,7 @@ export default function Profile() {
 
   async function handleWithdraw() {
     if (!address) return;
-    if (earnings === 0n) {
+    if (earnings === 0) {
       toast.error("No earnings to withdraw");
       return;
     }
@@ -42,7 +42,7 @@ export default function Profile() {
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
       toast.success(`Withdrawal successful! Tx: ${hash.slice(0, 12)}...`);
-      setEarnings(0n);
+      setEarnings(0);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Withdrawal failed");
     } finally {
@@ -159,12 +159,12 @@ export default function Profile() {
               style={{
                 fontSize: "36px",
                 fontWeight: 800,
-                color: earnings > 0n ? "var(--accent)" : "var(--text-muted)",
+                color: earnings > 0 ? "var(--accent)" : "var(--text-muted)",
                 letterSpacing: "-0.02em",
                 marginBottom: "4px",
               }}
             >
-              {stroopsToXlm(earnings)}
+              {earnings.toFixed(2)}
             </div>
           )}
           <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "20px" }}>
@@ -174,7 +174,7 @@ export default function Profile() {
           <button
             className="btn btn-primary"
             onClick={handleWithdraw}
-            disabled={withdrawing || earnings === 0n}
+            disabled={withdrawing || earnings === 0}
             style={{ width: "100%" }}
           >
             <ArrowDownToLine size={14} />
