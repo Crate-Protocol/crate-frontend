@@ -30,6 +30,12 @@ export default function App() {
         <Route path="/upload" element={<Upload />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/sample/:id" element={<SampleDetail />} />
+        <Route path="*" element={
+          <main style={{ textAlign: "center", paddingTop: "80px", color: "var(--text-secondary)" }}>
+            <h1 style={{ fontSize: "48px", fontWeight: 800 }}>404</h1>
+            <p>Page not found.</p>
+          </main>
+        } />
       </Routes>
     </BrowserRouter>
   );
