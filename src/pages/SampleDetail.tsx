@@ -15,7 +15,8 @@ export default function SampleDetail() {
   const [purchased, setPurchased] = useState(false);
 
   useEffect(() => {
-    if (id) loadSample();
+    if (id && /^\d+$/.test(id)) loadSample();
+    else setLoading(false);
   }, [id, address]);
 
   async function loadSample() {
