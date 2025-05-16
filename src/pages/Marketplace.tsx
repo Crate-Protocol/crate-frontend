@@ -4,7 +4,6 @@ import { getStats } from "../contracts/crate";
 
 const GENRES = ["All", "Trap", "R&B", "Drill", "Afrobeats", "Lo-Fi", "Pop"];
 
-// Demo data until contract returns real samples
 const DEMO_SAMPLES = [
   { id: 1, title: "Midnight Waves", producer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5", genre: "Trap",      bpm: 140, leasePrice: 25,  premiumPrice: 150, exclusivePrice: 800  },
   { id: 2, title: "Lagos Summer",   producer: "GCYZRXMKTWA7JY475PKO5CI3R5XS6ARMHNXWLL3HWNUOJA2VR7LBWSCU",  genre: "Afrobeats", bpm: 105, leasePrice: 30,  premiumPrice: 200, exclusivePrice: 1200 },
@@ -17,11 +16,14 @@ const DEMO_SAMPLES = [
 export default function Marketplace() {
   const [genre, setGenre] = useState("All");
   const [search, setSearch] = useState("");
-  const [stats, setStats] = useState<{ totalSamples: number; totalVolume: string } | null>(null);
+  const [stats, setStats] = useState<{ totalSamples: number; totalVolume: string; totalProducers: number } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statsError, setStatsError] = useState(false);
 
   useEffect(() => {
-    getStats().then(s => { setStats(s); setLoading(false); }).catch(() => setLoading(false));
+    getStats()
+      .then(s => { setStats(s); setLoading(false); })
+      .catch(() => { setStatsError(true); setLoading(false); });
   }, []);
 
   const filtered = DEMO_SAMPLES.filter(s =>
@@ -37,7 +39,12 @@ export default function Marketplace() {
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 6px", letterSpacing: "-0.02em" }}>Marketplace</h1>
           <p style={{ color: "#525252", fontSize: 14, margin: 0 }}>
-            {stats ? `${stats.totalSamples} beats · ${stats.totalVolume} XLM volume` : "Browse beats on Stellar testnet"}
+            {statsError
+              ? "Could not load contract stats"
+              : stats
+              ? `${stats.totalSamples} beats · ${stats.totalVolume} XLM volume · ${stats.totalProducers} producers`
+              : "Browse beats on Stellar testnet"
+            }
           </p>
         </div>
 
