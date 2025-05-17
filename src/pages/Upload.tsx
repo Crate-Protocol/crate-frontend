@@ -56,9 +56,11 @@ export default function Upload() {
   async function uploadToIPFS(file: File): Promise<string> {
     const pinataJwt = import.meta.env.VITE_PINATA_JWT as string | undefined;
     if (!pinataJwt) {
-      // Simulated CID for development
       await new Promise((r) => setTimeout(r, 800));
-      return `Qm${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+      const buf = await file.arrayBuffer();
+      const hash = await crypto.subtle.digest("SHA-256", buf);
+      const hex  = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 44);
+      return `Qm${hex}`;
     }
 
     const formData = new FormData();
