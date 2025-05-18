@@ -31,8 +31,7 @@ export default function Navbar() {
           justifyContent: "space-between",
         }}
       >
-        {/* Logo */}
-        <Link
+                <Link
           to="/"
           style={{
             fontSize: "18px",
@@ -47,12 +46,12 @@ export default function Navbar() {
           <span style={{ color: "var(--text-primary)" }}>Crate</span>
         </Link>
 
-        {/* Nav links */}
-        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        <nav aria-label="Main navigation" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           {NAV_LINKS.map((link) => (
             <Link
               key={link.path}
               to={link.path}
+              aria-current={pathname === link.path ? "page" : undefined}
               style={{
                 padding: "6px 12px",
                 borderRadius: "var(--radius)",
@@ -70,10 +69,9 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-        </div>
+        </nav>
 
-        {/* Wallet */}
-        <WalletButton />
+                <WalletButton />
       </div>
     </nav>
   );
