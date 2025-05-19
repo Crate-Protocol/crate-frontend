@@ -60,8 +60,8 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
           ))}
         </div>
 
-        {/* Buy */}
         <button
+          aria-label={selected !== null ? `Buy ${tiers[selected].label} license for ${title}` : "Select a license tier"}
           disabled={selected === null}
           onClick={() => selected !== null && onBuy?.(id, selected)}
           style={{ width: "100%", background: selected !== null ? "#facc15" : "#1a1a1a", color: selected !== null ? "#000" : "#525252", border: "none", borderRadius: 12, padding: "11px", fontSize: 14, fontWeight: 700, cursor: selected !== null ? "pointer" : "default", transition: "all 0.15s" }}>
