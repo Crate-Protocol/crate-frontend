@@ -34,7 +34,7 @@ export default function Upload() {
   }
 
   function handleFile(file: File) {
-    const allowed = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/aiff", "audio/flac"];
+    const allowed = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/x-aiff", "audio/aiff", "audio/flac", "audio/x-flac"];
     if (!allowed.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|aif|aiff|flac)$/i)) {
       toast.error("Please upload an audio file (mp3, wav, flac, aiff)");
       return;
