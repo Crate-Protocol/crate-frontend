@@ -108,13 +108,11 @@ export default function Upload() {
 
     setUploading(true);
     try {
-      // Step 1: Upload to IPFS
       setStep("ipfs");
       const cid = await uploadToIPFS(form.file);
       setUploadedCid(cid);
       toast.success("File uploaded to IPFS");
 
-      // Step 2: Build contract transaction
       setStep("contract");
       const xdr = await uploadSample({
         uploader: address,
@@ -125,10 +123,7 @@ export default function Upload() {
         bpm: bpmNum,
       });
 
-      // Step 3: Sign via wallet
       const signed = await signTransaction(xdr);
-
-      // Step 4: Submit
       const hash = await submitTransaction(signed);
       toast.success(`Beat listed! Tx: ${hash.slice(0, 12)}...`);
       setStep("done");
@@ -206,7 +201,6 @@ export default function Upload() {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* File Drop Zone */}
         <div
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -256,7 +250,6 @@ export default function Upload() {
           )}
         </div>
 
-        {/* Form fields */}
         <div style={{ display: "grid", gap: "20px" }}>
           <div className="form-group">
             <label className="label">Beat Title *</label>
@@ -309,7 +302,6 @@ export default function Upload() {
             </select>
           </div>
 
-          {/* Revenue split info */}
           <div
             style={{
               background: "var(--surface-2)",
@@ -340,7 +332,6 @@ export default function Upload() {
             )}
           </div>
 
-          {/* Progress */}
           {uploading && (
             <div
               style={{
