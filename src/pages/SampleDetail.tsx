@@ -85,7 +85,6 @@ export default function SampleDetail() {
       </Link>
 
       <div className="card" style={{ padding: "32px" }}>
-        {/* Beat art */}
         <div
           style={{
             width: "100%",
@@ -115,7 +114,6 @@ export default function SampleDetail() {
           </div>
         </div>
 
-        {/* Meta */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
           <div>
             <h1 style={{ fontSize: "26px", fontWeight: 800, marginBottom: "6px" }}>{sample.title}</h1>
@@ -130,7 +128,6 @@ export default function SampleDetail() {
           </div>
         </div>
 
-        {/* Tags */}
         <div style={{ display: "flex", gap: 10, marginBottom: "24px", flexWrap: "wrap" }}>
           <span className="badge badge-yellow">{sample.genre}</span>
           <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
@@ -146,7 +143,6 @@ export default function SampleDetail() {
           )}
         </div>
 
-        {/* IPFS link */}
         <div
           style={{
             padding: "12px 16px",
@@ -174,7 +170,6 @@ export default function SampleDetail() {
           </a>
         </div>
 
-        {/* Revenue info */}
         <div
           style={{
             padding: "12px 16px",
@@ -192,7 +187,6 @@ export default function SampleDetail() {
           <span style={{ color: "var(--success)", fontWeight: 600 }}>{producerEarning} XLM (90%)</span>
         </div>
 
-        {/* Buy button */}
         {purchased ? (
           <div style={{ textAlign: "center", padding: "16px" }}>
             <div style={{ color: "var(--success)", fontWeight: 600, fontSize: "16px", marginBottom: 8 }}>
