@@ -26,7 +26,6 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
 
   return (
     <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 20, overflow: "hidden", transition: "border-color 0.15s" }}>
-      {/* Waveform art */}
       <div style={{ background: "#0a0a0a", height: 80, display: "flex", alignItems: "center", justifyContent: "center", gap: 3, padding: "0 16px" }}>
         {BARS.map((h, i) => (
           <div key={i} style={{ width: 3, height: h * 0.6, background: "#facc15", borderRadius: 2, opacity: 0.7 + i * 0.02 }} />
@@ -34,7 +33,6 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
       </div>
 
       <div style={{ padding: 16 }}>
-        {/* Meta */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
           <div>
             <p style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>{title}</p>
@@ -48,7 +46,6 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
           </div>
         </div>
 
-        {/* License tiers */}
         <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
           {tiers.map((t, i) => (
             <button key={i} onClick={() => setSelected(i)}
