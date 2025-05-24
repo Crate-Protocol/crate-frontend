@@ -76,6 +76,7 @@ export function useWallet(): WalletState {
   }, [fetchBalance]);
 
   const disconnect = useCallback(() => {
+    kit = null;
     setAddress(null);
     setBalance("0");
     localStorage.removeItem("crate_wallet");
