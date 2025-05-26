@@ -126,15 +126,18 @@ export async function uploadSample(params: {
   return prepared.toXDR();
 }
 
-export async function purchaseSample(params: { buyer: string; sampleId: number; tier?: number }): Promise<string> {
+export async function purchaseSample(params: {
+  buyer: string; sampleId: number; tokenAddress: string; tier?: number;
+}): Promise<string> {
   const src  = await server().getAccount(params.buyer);
   const c    = new Contract(CONTRACT_ID);
   const tier = params.tier ?? 0;
   const tx   = new TransactionBuilder(src, { fee: "1000000", networkPassphrase: NETWORK_PASS })
     .addOperation(c.call("purchase_license",
       new Address(params.buyer).toScVal(),
-      nativeToScVal(params.sampleId, { type: "u32" }),
-      nativeToScVal(tier,            { type: "u32" }),
+      nativeToScVal(params.sampleId,     { type: "u32" }),
+      new Address(params.tokenAddress).toScVal(),
+      nativeToScVal(tier,                { type: "u32" }),
     )).setTimeout(300).build();
   const prepared = await server().prepareTransaction(tx);
   return prepared.toXDR();
