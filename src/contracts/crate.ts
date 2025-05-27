@@ -80,12 +80,14 @@ export async function buildPurchaseTx(
   return { preparedXdr: prepared.toXDR() };
 }
 
-export async function buildWithdrawTx(producer: string): Promise<{ preparedXdr: string }> {
+export async function buildWithdrawTx(producer: string, tokenAddress: string): Promise<{ preparedXdr: string }> {
   const src  = await server().getAccount(producer);
   const c    = new Contract(CONTRACT_ID);
   const tx   = new TransactionBuilder(src, { fee: "1000000", networkPassphrase: NETWORK_PASS })
-    .addOperation(c.call("withdraw_earnings", new Address(producer).toScVal()))
-    .setTimeout(300).build();
+    .addOperation(c.call("withdraw_earnings",
+      new Address(producer).toScVal(),
+      new Address(tokenAddress).toScVal(),
+    )).setTimeout(300).build();
   const prepared = await server().prepareTransaction(tx);
   return { preparedXdr: prepared.toXDR() };
 }
@@ -143,7 +145,7 @@ export async function purchaseSample(params: {
   return prepared.toXDR();
 }
 
-export async function withdrawEarnings(producer: string): Promise<string> {
-  const { preparedXdr } = await buildWithdrawTx(producer);
+export async function withdrawEarnings(producer: string, tokenAddress: string): Promise<string> {
+  const { preparedXdr } = await buildWithdrawTx(producer, tokenAddress);
   return preparedXdr;
 }
