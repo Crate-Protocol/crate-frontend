@@ -92,6 +92,19 @@ export async function buildWithdrawTx(producer: string, tokenAddress: string): P
   return { preparedXdr: prepared.toXDR() };
 }
 
+export async function getLicense(holderAddress: string, sampleId: number): Promise<number | null> {
+  if (!CONTRACT_ID) return null;
+  const c = new Contract(CONTRACT_ID);
+  return read<number>(
+    holderAddress,
+    c.call(
+      "get_license",
+      new Address(holderAddress).toScVal(),
+      nativeToScVal(sampleId, { type: "u32" }),
+    )
+  );
+}
+
 export async function getSample(sourceAddress: string, sampleId: bigint): Promise<SampleData | null> {
   if (!CONTRACT_ID) return null;
   const c = new Contract(CONTRACT_ID);
