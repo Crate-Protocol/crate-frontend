@@ -37,8 +37,14 @@ export default function Profile() {
       return;
     }
     setWithdrawing(true);
+    const tokenAddress = import.meta.env.VITE_XLM_TOKEN_ADDRESS as string | undefined;
+    if (!tokenAddress) {
+      toast.error("XLM token address not configured");
+      setWithdrawing(false);
+      return;
+    }
     try {
-      const xdr = await withdrawEarnings(address);
+      const xdr = await withdrawEarnings(address, tokenAddress);
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
       toast.success(`Withdrawal successful! Tx: ${hash.slice(0, 12)}...`);
