@@ -240,3 +240,5 @@ input, textarea, select {
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius);
 }
+
+/* 1: feat: scaffold React 18 + Vite project w - @brightpixel-dev */
