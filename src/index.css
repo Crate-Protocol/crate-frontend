@@ -274,3 +274,5 @@ input, textarea, select {
 /* 16: refactor: extract reusable WalletButton  - @nonsobethel0-dev */
 
 /* 17: feat: add loading skeletons for async co - @oluebubejoy */
+
+/* 18: fix: resolve CORS issue with IPFS gatewa - @brightcli-stack */
