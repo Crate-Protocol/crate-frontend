@@ -1,335 +1,82 @@
-import { Link } from "react-router-dom";
-import { Zap, Music2, DollarSign, Shield, ArrowRight, Play } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useWallet } from "../hooks/useWallet";
 
 const STATS = [
-  { label: "Total Samples", value: "2,400+" },
-  { label: "Producers Paid", value: "340+" },
-  { label: "Settlement Time", value: "5 sec" },
-  { label: "Producer Cut", value: "90%" },
+  { value: "2,400+", label: "Beats listed" },
+  { value: "90%",    label: "Producer revenue" },
+  { value: "$0.001", label: "Avg transaction fee" },
+  { value: "5s",     label: "Settlement time" },
 ];
 
-const FEATURED = [
-  { id: "1", title: "Midnight Trap", producer: "OG Beats", genre: "Trap", bpm: 140, price: 12, plays: 820 },
-  { id: "2", title: "Lo-Fi Study Session", producer: "chillwav3", genre: "Lo-Fi", bpm: 85, price: 8, plays: 1340 },
-  { id: "3", title: "808 Summer", producer: "BassKing", genre: "Hip-Hop", bpm: 92, price: 15, plays: 560 },
-];
-
-const HOW_IT_WORKS = [
-  {
-    step: "01",
-    title: "Connect Wallet",
-    desc: "Connect your Freighter wallet to authenticate on Stellar testnet.",
-  },
-  {
-    step: "02",
-    title: "Upload or Browse",
-    desc: "Producers upload beats to IPFS. Buyers browse the marketplace.",
-  },
-  {
-    step: "03",
-    title: "Instant Settlement",
-    desc: "Payments settle in 5 seconds via Soroban smart contract. 90% straight to you.",
-  },
+const STEPS = [
+  { n: "01", title: "Upload your beat", body: "Upload your audio file to IPFS. Set your price for lease, premium, and exclusive licenses." },
+  { n: "02", title: "Set your price",   body: "Choose three license tiers. The smart contract enforces every rule — no PDFs, no lawyers." },
+  { n: "03", title: "Get paid instantly", body: "Buyer pays in XLM. 90% lands in your wallet in 5 seconds. Stellar handles the rest." },
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
+  const { address, connect } = useWallet();
+
   return (
-    <main style={{ minHeight: "calc(100vh - 64px)" }}>
-      {/* ── Hero ───────────────────────────────────────────── */}
-      <section
-        className="container animate-fade-in"
-        style={{
-          paddingTop: "80px",
-          paddingBottom: "80px",
-          textAlign: "center",
-        }}
-      >
-        <div
-          className="badge badge-yellow"
-          style={{ marginBottom: "20px", display: "inline-flex" }}
-        >
-          <Zap size={11} style={{ marginRight: 4 }} />
+    <div style={{ background: "#0a0a0a", minHeight: "100vh", color: "#fff", fontFamily: "Inter, sans-serif" }}>
+
+      {/* Hero */}
+      <section style={{ maxWidth: 900, margin: "0 auto", padding: "96px 24px 80px", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.2)", borderRadius: 999, padding: "6px 14px", marginBottom: 32, fontSize: 12, fontWeight: 700, color: "#facc15", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           Live on Stellar Testnet
         </div>
-
-        <h1
-          style={{
-            fontSize: "clamp(40px, 6vw, 72px)",
-            fontWeight: 800,
-            lineHeight: 1.05,
-            letterSpacing: "-0.03em",
-            marginBottom: "24px",
-            color: "var(--text-primary)",
-            maxWidth: "800px",
-            margin: "0 auto 24px",
-          }}
-        >
-          The marketplace where producers
-          <br />
-          <span style={{ color: "var(--accent)" }}>get paid instantly.</span>
+        <h1 style={{ fontSize: "clamp(2.4rem,6vw,4rem)", fontWeight: 900, lineHeight: 1.08, letterSpacing: "-0.03em", margin: "0 0 20px" }}>
+          Sell your beat.<br />
+          <span style={{ color: "#facc15" }}>Get paid in 5 seconds.</span>
         </h1>
-
-        <p
-          style={{
-            fontSize: "18px",
-            color: "var(--text-secondary)",
-            maxWidth: "560px",
-            margin: "0 auto 40px",
-            lineHeight: 1.7,
-          }}
-        >
-          Buy and sell beats and samples peer-to-peer on Stellar. Smart
-          contract enforces 90/10 splits. Settlement in under 5 seconds.
+        <p style={{ fontSize: 18, color: "#737373", maxWidth: 560, margin: "0 auto 40px", lineHeight: 1.6 }}>
+          Crate is a P2P beat marketplace on Stellar. No middlemen, no 30-day payouts. Just upload, set your price, and earn.
         </p>
-
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link to="/marketplace" className="btn btn-primary btn-lg">
-            Browse Marketplace
-            <ArrowRight size={16} />
-          </Link>
-          <Link to="/upload" className="btn btn-secondary btn-lg">
-            Upload a Beat
-          </Link>
+          <button onClick={() => navigate("/marketplace")}
+            style={{ background: "#facc15", color: "#000", border: "none", borderRadius: 12, padding: "14px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+            Browse Beats
+          </button>
+          {!address ? (
+            <button onClick={connect}
+              style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, padding: "14px 28px", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
+              Connect Wallet
+            </button>
+          ) : (
+            <button onClick={() => navigate("/upload")}
+              style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, padding: "14px 28px", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
+              Upload a Beat
+            </button>
+          )}
         </div>
       </section>
 
-      {/* ── Stats Bar ──────────────────────────────────────── */}
-      <section
-        style={{
-          borderTop: "1px solid var(--border)",
-          borderBottom: "1px solid var(--border)",
-          background: "var(--surface)",
-        }}
-      >
-        <div
-          className="container"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            padding: "32px 24px",
-            gap: "16px",
-          }}
-        >
-          {STATS.map((s) => (
-            <div key={s.label} style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 800,
-                  color: "var(--accent)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                {s.value}
-              </div>
-              <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: 4 }}>
-                {s.label}
-              </div>
+      {/* Stats */}
+      <section style={{ borderTop: "1px solid #1a1a1a", borderBottom: "1px solid #1a1a1a", padding: "32px 24px" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 24, textAlign: "center" }}>
+          {STATS.map(s => (
+            <div key={s.label}>
+              <div style={{ fontSize: 28, fontWeight: 900, color: "#facc15" }}>{s.value}</div>
+              <div style={{ fontSize: 13, color: "#525252", marginTop: 4 }}>{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── Featured Beats ─────────────────────────────────── */}
-      <section className="container" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "32px",
-          }}
-        >
-          <h2 style={{ fontSize: "22px", fontWeight: 700 }}>Featured Beats</h2>
-          <Link
-            to="/marketplace"
-            style={{ fontSize: "14px", color: "var(--accent)", display: "flex", alignItems: "center", gap: 4 }}
-          >
-            View all <ArrowRight size={14} />
-          </Link>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {FEATURED.map((beat) => (
-            <Link to={`/sample/${beat.id}`} key={beat.id} style={{ textDecoration: "none" }}>
-              <div
-                className="card"
-                style={{
-                  padding: "20px",
-                  transition: "border-color 0.15s, transform 0.15s",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)";
-                  (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
-                  (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-                }}
-              >
-                {/* Beat art placeholder */}
-                <div
-                  style={{
-                    width: "100%",
-                    height: "140px",
-                    background: "var(--surface-2)",
-                    borderRadius: "var(--radius)",
-                    marginBottom: "16px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      background: "rgba(250, 204, 21, 0.15)",
-                      border: "1px solid var(--accent)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Play size={18} fill="var(--accent)" color="var(--accent)" style={{ marginLeft: 2 }} />
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ fontSize: "15px", fontWeight: 600, marginBottom: 2 }}>{beat.title}</div>
-                    <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                      @{beat.producer}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accent)" }}>
-                      {beat.price} XLM
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                  <span className="badge badge-yellow">{beat.genre}</span>
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: "var(--text-muted)",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    {beat.bpm} BPM
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ── How It Works ───────────────────────────────────── */}
-      <section
-        style={{
-          background: "var(--surface)",
-          borderTop: "1px solid var(--border)",
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        <div className="container" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
-          <h2
-            style={{
-              fontSize: "22px",
-              fontWeight: 700,
-              marginBottom: "40px",
-              textAlign: "center",
-            }}
-          >
-            How It Works
-          </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "32px",
-            }}
-          >
-            {HOW_IT_WORKS.map((step) => (
-              <div key={step.step}>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: "var(--accent)",
-                    fontFamily: "var(--font-mono)",
-                    marginBottom: "10px",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  {step.step}
-                </div>
-                <div style={{ fontSize: "16px", fontWeight: 600, marginBottom: 8 }}>{step.title}</div>
-                <div style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                  {step.desc}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features Grid ──────────────────────────────────── */}
-      <section className="container" style={{ paddingTop: "64px", paddingBottom: "80px" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {[
-            {
-              icon: <Zap size={20} color="var(--accent)" />,
-              title: "5-Second Settlement",
-              desc: "Stellar finalizes in under 5 seconds. No waiting, no escrow delays.",
-            },
-            {
-              icon: <DollarSign size={20} color="var(--accent)" />,
-              title: "90% to Producers",
-              desc: "Smart contract enforces the split on-chain. Platform takes 10%, always.",
-            },
-            {
-              icon: <Music2 size={20} color="var(--accent)" />,
-              title: "IPFS Storage",
-              desc: "Files stored on IPFS via Pinata. Permanent, decentralized, yours.",
-            },
-            {
-              icon: <Shield size={20} color="var(--accent)" />,
-              title: "Non-Custodial",
-              desc: "Your keys, your funds. Freighter wallet. We never hold your XLM.",
-            },
-          ].map((f) => (
-            <div
-              key={f.title}
-              className="card"
-              style={{ padding: "24px" }}
-            >
-              <div style={{ marginBottom: "12px" }}>{f.icon}</div>
-              <div style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>{f.title}</div>
-              <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.6 }}>{f.desc}</div>
+      {/* How it works */}
+      <section style={{ maxWidth: 960, margin: "0 auto", padding: "80px 24px" }}>
+        <h2 style={{ textAlign: "center", fontSize: 28, fontWeight: 800, marginBottom: 48, letterSpacing: "-0.02em" }}>How Crate works</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 20 }}>
+          {STEPS.map(s => (
+            <div key={s.n} style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 20, padding: 28 }}>
+              <div style={{ fontSize: 12, fontWeight: 900, color: "#facc15", letterSpacing: "0.1em", marginBottom: 12 }}>{s.n}</div>
+              <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 10 }}>{s.title}</h3>
+              <p style={{ fontSize: 14, color: "#737373", lineHeight: 1.6, margin: 0 }}>{s.body}</p>
             </div>
           ))}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

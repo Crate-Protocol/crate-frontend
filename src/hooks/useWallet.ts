@@ -1,111 +1,83 @@
-/**
- * useWallet.ts
- * ─────────────
- * Freighter wallet hook via @creit.tech/stellar-wallets-kit.
- *
- * Provides:
- * - connect()        — open wallet selector modal
- * - disconnect()     — clear wallet state
- * - signTransaction() — sign a Stellar XDR transaction
- * - address          — connected public key (G...)
- * - isConnected      — boolean
- * - isLoading        — connecting / fetching state
- */
-
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   StellarWalletsKit,
   WalletNetwork,
   FREIGHTER_ID,
-  allowAllModules,
+  FreighterModule,
 } from "@creit.tech/stellar-wallets-kit";
+import { Horizon } from "@stellar/stellar-sdk";
 
-const NETWORK =
-  (import.meta.env.VITE_NETWORK as string | undefined) ?? "TESTNET";
+const NETWORK = (import.meta.env.VITE_NETWORK as string) === "MAINNET"
+  ? WalletNetwork.PUBLIC
+  : WalletNetwork.TESTNET;
 
-const walletNetwork =
-  NETWORK === "PUBLIC" ? WalletNetwork.PUBLIC : WalletNetwork.TESTNET;
+const HORIZON_URL = (import.meta.env.VITE_HORIZON_URL as string)
+  ?? "https://horizon-testnet.stellar.org";
 
-export interface WalletState {
+let kit: StellarWalletsKit | null = null;
+
+function getKit(): StellarWalletsKit {
+  if (!kit) {
+    kit = new StellarWalletsKit({
+      network: NETWORK,
+      selectedWalletId: FREIGHTER_ID,
+      modules: [new FreighterModule()],
+    });
+  }
+  return kit;
+}
+
+interface WalletState {
   address: string | null;
-  isConnected: boolean;
-  isLoading: boolean;
+  balance: string;
+  isConnecting: boolean;
   connect: () => Promise<void>;
   disconnect: () => void;
-  signTransaction: (xdr: string) => Promise<string>;
+  signTransaction: (xdr: string) => Promise<{ signedTxXdr: string }>;
 }
 
 export function useWallet(): WalletState {
-  const [address, setAddress] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [address, setAddress]         = useState<string | null>(null);
+  const [balance, setBalance]         = useState("0");
+  const [isConnecting, setConnecting] = useState(false);
 
-  const kitRef = useRef<StellarWalletsKit | null>(null);
-
-  const getKit = useCallback(() => {
-    if (!kitRef.current) {
-      kitRef.current = new StellarWalletsKit({
-        network: walletNetwork,
-        selectedWalletId: FREIGHTER_ID,
-        modules: allowAllModules(),
-      });
-    }
-    return kitRef.current;
+  const fetchBalance = useCallback(async (addr: string) => {
+    try {
+      const server  = new Horizon.Server(HORIZON_URL);
+      const account = await server.loadAccount(addr);
+      const native  = account.balances.find(b => b.asset_type === "native");
+      setBalance(native ? parseFloat(native.balance).toFixed(2) : "0");
+    } catch { setBalance("0"); }
   }, []);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("crate_wallet");
+    if (saved) { setAddress(saved); void fetchBalance(saved); }
+  }, [fetchBalance]);
+
   const connect = useCallback(async () => {
-    setIsLoading(true);
+    setConnecting(true);
     try {
-      const kit = getKit();
-
-      await new Promise<void>((resolve, reject) => {
-        kit.openModal({
-          onWalletSelected: async (option) => {
-            kit.setWallet(option.id);
-            resolve();
-          },
-          onClosed: () => reject(new Error("Modal closed")),
-        });
-      });
-
-      const { address: addr } = await kit.getAddress();
-      setAddress(addr);
-    } catch (err) {
-      // User closed modal — not an error
-      if (err instanceof Error && err.message !== "Modal closed") {
-        console.error("[useWallet] connect error:", err);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getKit]);
+      await getKit().openModal({ onWalletSelected: async (option) => {
+        getKit().setWallet(option.id);
+        const { address: addr } = await getKit().getAddress();
+        setAddress(addr);
+        localStorage.setItem("crate_wallet", addr);
+        await fetchBalance(addr);
+      }});
+    } finally { setConnecting(false); }
+  }, [fetchBalance]);
 
   const disconnect = useCallback(() => {
     setAddress(null);
-    kitRef.current = null;
+    setBalance("0");
+    localStorage.removeItem("crate_wallet");
   }, []);
 
-  const signTransaction = useCallback(
-    async (xdr: string): Promise<string> => {
-      if (!address) throw new Error("Wallet not connected");
-      const kit = getKit();
-      const { signedTxXdr } = await kit.signTransaction(xdr, {
-        address,
-        networkPassphrase:
-          walletNetwork === WalletNetwork.PUBLIC
-            ? "Public Global Stellar Network ; September 2015"
-            : "Test SDF Network ; September 2015",
-      });
-      return signedTxXdr;
-    },
-    [address, getKit]
-  );
+  const signTransaction = useCallback(async (xdr: string) => {
+    const { signedTxXdr } = await getKit().signTransaction(xdr, { network: NETWORK });
+    return { signedTxXdr };
+  }, []);
 
-  return {
-    address,
-    isConnected: !!address,
-    isLoading,
-    connect,
-    disconnect,
-    signTransaction,
-  };
+  return { address, balance, isConnecting, connect, disconnect, signTransaction };
 }

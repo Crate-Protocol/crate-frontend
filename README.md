@@ -19,6 +19,18 @@
 
 ---
 
+## Currently Building
+
+| Feature | Status | Branch |
+|---|---|---|
+| Beat upload flow with IPFS | Done | `main` |
+| Marketplace grid with filters | In Progress | `feat/marketplace-filters` |
+| Audio preview player (30s clips) | In Progress | `feat/audio-preview` |
+| Mobile app (React Native) | In Progress | `crate-mobile` |
+| Mainnet deployment | Planned | — |
+
+---
+
 ## Overview
 
 **Crate** is a peer-to-peer sample and beat marketplace built on [Stellar](https://stellar.org). It proves a simple thesis: producers deserve to be paid instantly, and Ethereum fees make that impossible on a $20 beat.
