@@ -34,7 +34,7 @@ export default function Upload() {
   }
 
   function handleFile(file: File) {
-    const allowed = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/aiff", "audio/flac"];
+    const allowed = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/x-aiff", "audio/aiff", "audio/flac", "audio/x-flac"];
     if (!allowed.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|aif|aiff|flac)$/i)) {
       toast.error("Please upload an audio file (mp3, wav, flac, aiff)");
       return;
@@ -56,9 +56,11 @@ export default function Upload() {
   async function uploadToIPFS(file: File): Promise<string> {
     const pinataJwt = import.meta.env.VITE_PINATA_JWT as string | undefined;
     if (!pinataJwt) {
-      // Simulated CID for development
       await new Promise((r) => setTimeout(r, 800));
-      return `Qm${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+      const buf = await file.arrayBuffer();
+      const hash = await crypto.subtle.digest("SHA-256", buf);
+      const hex  = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 44);
+      return `Qm${hex}`;
     }
 
     const formData = new FormData();
@@ -106,13 +108,11 @@ export default function Upload() {
 
     setUploading(true);
     try {
-      // Step 1: Upload to IPFS
       setStep("ipfs");
       const cid = await uploadToIPFS(form.file);
       setUploadedCid(cid);
       toast.success("File uploaded to IPFS");
 
-      // Step 2: Build contract transaction
       setStep("contract");
       const xdr = await uploadSample({
         uploader: address,
@@ -123,10 +123,7 @@ export default function Upload() {
         bpm: bpmNum,
       });
 
-      // Step 3: Sign via wallet
       const signed = await signTransaction(xdr);
-
-      // Step 4: Submit
       const hash = await submitTransaction(signed);
       toast.success(`Beat listed! Tx: ${hash.slice(0, 12)}...`);
       setStep("done");
@@ -204,7 +201,6 @@ export default function Upload() {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* File Drop Zone */}
         <div
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -254,7 +250,6 @@ export default function Upload() {
           )}
         </div>
 
-        {/* Form fields */}
         <div style={{ display: "grid", gap: "20px" }}>
           <div className="form-group">
             <label className="label">Beat Title *</label>
@@ -307,7 +302,6 @@ export default function Upload() {
             </select>
           </div>
 
-          {/* Revenue split info */}
           <div
             style={{
               background: "var(--surface-2)",
@@ -338,7 +332,6 @@ export default function Upload() {
             )}
           </div>
 
-          {/* Progress */}
           {uploading && (
             <div
               style={{

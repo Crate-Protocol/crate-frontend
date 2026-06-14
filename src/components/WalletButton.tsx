@@ -1,4 +1,4 @@
-import { Wallet, LogOut, ChevronDown } from "lucide-react";
+import { Wallet, LogOut } from "lucide-react";
 import { useWallet } from "../hooks/useWallet";
 
 export default function WalletButton() {

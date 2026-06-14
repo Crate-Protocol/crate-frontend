@@ -31,6 +31,8 @@ interface WalletState {
   address: string | null;
   balance: string;
   isConnecting: boolean;
+  isLoading: boolean;
+  isConnected: boolean;
   connect: () => Promise<void>;
   disconnect: () => void;
   signTransaction: (xdr: string) => Promise<{ signedTxXdr: string }>;
@@ -52,7 +54,12 @@ export function useWallet(): WalletState {
 
   useEffect(() => {
     const saved = localStorage.getItem("crate_wallet");
-    if (saved) { setAddress(saved); void fetchBalance(saved); }
+    if (saved && /^G[A-Z2-7]{55}$/.test(saved)) {
+      setAddress(saved);
+      void fetchBalance(saved);
+    } else if (saved) {
+      localStorage.removeItem("crate_wallet");
+    }
   }, [fetchBalance]);
 
   const connect = useCallback(async () => {
@@ -69,6 +76,7 @@ export function useWallet(): WalletState {
   }, [fetchBalance]);
 
   const disconnect = useCallback(() => {
+    kit = null;
     setAddress(null);
     setBalance("0");
     localStorage.removeItem("crate_wallet");
@@ -79,5 +87,7 @@ export function useWallet(): WalletState {
     return { signedTxXdr };
   }, []);
 
-  return { address, balance, isConnecting, connect, disconnect, signTransaction };
+  const isConnected = address !== null;
+  const isLoading   = isConnecting;
+  return { address, balance, isConnecting, isLoading, isConnected, connect, disconnect, signTransaction };
 }

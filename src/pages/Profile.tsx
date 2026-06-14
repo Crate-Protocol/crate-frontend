@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Wallet, TrendingUp, Music, ArrowDownToLine, Copy, CheckCircle } from "lucide-react";
 import { useWallet } from "../hooks/useWallet";
-import { getEarnings, withdrawEarnings, submitTransaction, stroopsToXlm } from "../contracts/crate";
+import { getEarnings, withdrawEarnings, submitTransaction } from "../contracts/crate";
 import toast from "react-hot-toast";
 
 export default function Profile() {
   const { address, isConnected, connect, disconnect, signTransaction } = useWallet();
-  const [earnings, setEarnings] = useState<bigint>(0n);
+  const [earnings, setEarnings] = useState<number>(0);
   const [loadingEarnings, setLoadingEarnings] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -21,7 +21,7 @@ export default function Profile() {
     if (!address) return;
     setLoadingEarnings(true);
     try {
-      const e = await getEarnings(address, address);
+      const e = await getEarnings(address);
       setEarnings(e);
     } catch {
       toast.error("Failed to load earnings");
@@ -32,17 +32,23 @@ export default function Profile() {
 
   async function handleWithdraw() {
     if (!address) return;
-    if (earnings === 0n) {
+    if (earnings === 0) {
       toast.error("No earnings to withdraw");
       return;
     }
     setWithdrawing(true);
+    const tokenAddress = import.meta.env.VITE_XLM_TOKEN_ADDRESS as string | undefined;
+    if (!tokenAddress) {
+      toast.error("XLM token address not configured");
+      setWithdrawing(false);
+      return;
+    }
     try {
-      const xdr = await withdrawEarnings(address);
+      const xdr = await withdrawEarnings(address, tokenAddress);
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
       toast.success(`Withdrawal successful! Tx: ${hash.slice(0, 12)}...`);
-      setEarnings(0n);
+      setEarnings(0);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Withdrawal failed");
     } finally {
@@ -159,12 +165,12 @@ export default function Profile() {
               style={{
                 fontSize: "36px",
                 fontWeight: 800,
-                color: earnings > 0n ? "var(--accent)" : "var(--text-muted)",
+                color: earnings > 0 ? "var(--accent)" : "var(--text-muted)",
                 letterSpacing: "-0.02em",
                 marginBottom: "4px",
               }}
             >
-              {stroopsToXlm(earnings)}
+              {earnings.toFixed(2)}
             </div>
           )}
           <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "20px" }}>
@@ -174,7 +180,7 @@ export default function Profile() {
           <button
             className="btn btn-primary"
             onClick={handleWithdraw}
-            disabled={withdrawing || earnings === 0n}
+            disabled={withdrawing || earnings === 0}
             style={{ width: "100%" }}
           >
             <ArrowDownToLine size={14} />
