@@ -8,7 +8,7 @@ const DEMO_SAMPLES = [
   { id: 1, title: "Midnight Waves", producer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5", genre: "Trap",      bpm: 140, leasePrice: 25,  premiumPrice: 150, exclusivePrice: 800  },
   { id: 2, title: "Lagos Summer",   producer: "GCYZRXMKTWA7JY475PKO5CI3R5XS6ARMHNXWLL3HWNUOJA2VR7LBWSCU",  genre: "Afrobeats", bpm: 105, leasePrice: 30,  premiumPrice: 200, exclusivePrice: 1200 },
   { id: 3, title: "Soft Hours",     producer: "GAKWONWPGF2GZUVUOV6U67TZXYZH2AD5HVLHT2FSIY5HPZTQSQI6VPGE", genre: "R&B",       bpm: 88,  leasePrice: 20,  premiumPrice: 120, exclusivePrice: 600  },
-  { id: 4, title: "Block Pressure", producer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5", genre: "Drill",     bpm: 148, leasePrice: 35,  premiumPrice: 180, exclusivePrice: 950  },
+  { id: 4, title: "Block Pressure", producer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5", genre: "Drill",     bpm: 148, leasePrice: 35,  premiumPrice: 180, exclusivePrice: 950, isExclusive: true },
   { id: 5, title: "Cloud Study",    producer: "GCYZRXMKTWA7JY475PKO5CI3R5XS6ARMHNXWLL3HWNUOJA2VR7LBWSCU",  genre: "Lo-Fi",     bpm: 72,  leasePrice: 15,  premiumPrice: 80,  exclusivePrice: 400  },
   { id: 6, title: "Runaway",        producer: "GAKWONWPGF2GZUVUOV6U67TZXYZH2AD5HVLHT2FSIY5HPZTQSQI6VPGE", genre: "Trap",      bpm: 145, leasePrice: 40,  premiumPrice: 220, exclusivePrice: 1500 },
 ];
