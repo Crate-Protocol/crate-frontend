@@ -14,6 +14,9 @@ const NETWORK = (import.meta.env.VITE_NETWORK as string) === "MAINNET"
 const HORIZON_URL = (import.meta.env.VITE_HORIZON_URL as string)
   ?? "https://horizon-testnet.stellar.org";
 
+const WALLET_KEY       = "crate_wallet";
+const DISCONNECTED_KEY = "crate_wallet_disconnected";
+
 let kit: StellarWalletsKit | null = null;
 
 function getKit(): StellarWalletsKit {
@@ -53,12 +56,17 @@ export function useWallet(): WalletState {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("crate_wallet");
+    // Respect an explicit disconnect across refreshes — some mobile browsers
+    // (Safari iOS, certain Android) keep the Freighter session alive, so we
+    // must not auto-reconnect while this flag is set.
+    if (localStorage.getItem(DISCONNECTED_KEY) === "true") return;
+
+    const saved = localStorage.getItem(WALLET_KEY);
     if (saved && /^G[A-Z2-7]{55}$/.test(saved)) {
       setAddress(saved);
       void fetchBalance(saved);
     } else if (saved) {
-      localStorage.removeItem("crate_wallet");
+      localStorage.removeItem(WALLET_KEY);
     }
   }, [fetchBalance]);
 
@@ -69,7 +77,9 @@ export function useWallet(): WalletState {
         getKit().setWallet(option.id);
         const { address: addr } = await getKit().getAddress();
         setAddress(addr);
-        localStorage.setItem("crate_wallet", addr);
+        localStorage.setItem(WALLET_KEY, addr);
+        // Explicit reconnect — re-enable auto-connect on future refreshes.
+        localStorage.removeItem(DISCONNECTED_KEY);
         await fetchBalance(addr);
       }});
     } finally { setConnecting(false); }
@@ -79,7 +89,9 @@ export function useWallet(): WalletState {
     kit = null;
     setAddress(null);
     setBalance("0");
-    localStorage.removeItem("crate_wallet");
+    localStorage.removeItem(WALLET_KEY);
+    // Persist intent to stay disconnected across refreshes.
+    localStorage.setItem(DISCONNECTED_KEY, "true");
   }, []);
 
   const signTransaction = useCallback(async (xdr: string) => {
