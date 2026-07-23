@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Wallet, TrendingUp, Music, ArrowDownToLine, Copy, CheckCircle } from "lucide-react";
 import { useWallet } from "../hooks/useWallet";
-import { getEarnings, withdrawEarnings, submitTransaction } from "../contracts/crate";
+import { getEarnings, withdrawEarnings, submitTransaction, listResale } from "../contracts/crate";
 import toast from "react-hot-toast";
 
 export default function Profile() {
@@ -10,10 +10,16 @@ export default function Profile() {
   const [loadingEarnings, setLoadingEarnings] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [ownedBeats, setOwnedBeats] = useState<any[]>([]);
 
   useEffect(() => {
     if (address) {
       loadEarnings();
+      // Mock loading owned beats
+      setOwnedBeats([
+        { id: 8, title: "Summer Breeze", genre: "Pop", bpm: 120, isExclusive: true, resalePrice: undefined },
+        { id: 7, title: "Night Walk", genre: "R&B", bpm: 95, isExclusive: true, resalePrice: 800 }
+      ]);
     }
   }, [address]);
 
@@ -61,6 +67,27 @@ export default function Profile() {
     navigator.clipboard.writeText(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleListResale(sampleId: number) {
+    if (!address) return;
+    const priceStr = prompt("Enter resale price in XLM:");
+    if (!priceStr) return;
+    const priceXlm = parseFloat(priceStr);
+    if (isNaN(priceXlm) || priceXlm <= 0) {
+      toast.error("Invalid price");
+      return;
+    }
+    
+    try {
+      const xdr = await listResale({ owner: address, sampleId, priceXlm });
+      const signed = await signTransaction(xdr);
+      const hash = await submitTransaction(signed);
+      toast.success(`Listed for resale! Tx: ${hash.slice(0, 12)}...`);
+      setOwnedBeats(beats => beats.map(b => b.id === sampleId ? { ...b, resalePrice: priceXlm } : b));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to list for resale");
+    }
   }
 
   if (!isConnected) {
@@ -223,6 +250,43 @@ export default function Profile() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div style={{ marginTop: "40px", maxWidth: "800px" }}>
+        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "16px" }}>Owned Exclusive Beats</h2>
+        {ownedBeats.length === 0 ? (
+          <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
+            No exclusive beats owned yet.
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: "12px" }}>
+            {ownedBeats.map(beat => (
+              <div key={beat.id} className="card" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: "15px", marginBottom: "4px" }}>{beat.title}</div>
+                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", display: "flex", gap: "8px" }}>
+                    <span style={{ background: "rgba(250,204,21,0.1)", color: "#facc15", padding: "2px 6px", borderRadius: "4px" }}>{beat.genre}</span>
+                    <span>{beat.bpm} BPM</span>
+                  </div>
+                </div>
+                <div>
+                  {beat.resalePrice ? (
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#3b82f6" }}>
+                      Listed for {beat.resalePrice} XLM
+                    </div>
+                  ) : (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => handleListResale(beat.id)}
+                    >
+                      List for Resale
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

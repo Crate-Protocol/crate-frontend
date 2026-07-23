@@ -13,7 +13,10 @@ interface SampleCardProps {
   exclusivePrice: number;
   tokenSymbol?: string;
   isExclusive?: boolean;
+  resalePrice?: number;
+  owner?: string;
   onBuy?: (id: number, tier: number) => void;
+  onBuyResale?: (id: number) => void;
 }
 
 const BARS = [40, 65, 50, 80, 45, 70, 55, 75, 42, 68, 52, 78, 46, 72, 58];
@@ -21,7 +24,7 @@ const BARS = [40, 65, 50, 80, 45, 70, 55, 75, 42, 68, 52, 78, 46, 72, 58];
 const EXCLUSIVE_TOOLTIP =
   "This beat was bought as an Exclusive license — the buyer now owns full rights, so it can no longer be purchased on any tier.";
 
-export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiumPrice, exclusivePrice, tokenSymbol = "XLM", isExclusive = false, onBuy }: SampleCardProps) {
+export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiumPrice, exclusivePrice, tokenSymbol = "XLM", isExclusive = false, resalePrice, owner, onBuy, onBuyResale }: SampleCardProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -50,18 +53,18 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
               display: "inline-flex",
               alignItems: "center",
               gap: 4,
-              background: "#ef4444",
+              background: resalePrice ? "#3b82f6" : "#ef4444",
               color: "#fff",
               fontSize: 10,
               fontWeight: 800,
               letterSpacing: "0.04em",
               padding: "4px 8px",
               borderRadius: 999,
-              boxShadow: "0 2px 8px rgba(239,68,68,0.4)",
+              boxShadow: resalePrice ? "0 2px 8px rgba(59,130,246,0.4)" : "0 2px 8px rgba(239,68,68,0.4)",
             }}
           >
             <Lock size={11} strokeWidth={2.5} />
-            SOLD EXCLUSIVE
+            {resalePrice ? "RESALE" : "SOLD EXCLUSIVE"}
           </span>
         )}
       </Link>
@@ -81,6 +84,14 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
         </div>
 
         {isExclusive ? (
+          resalePrice ? (
+            <button
+              aria-label={`Buy resale license for ${title}`}
+              onClick={() => onBuyResale?.(id)}
+              style={{ width: "100%", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 12, padding: "11px", fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.15s" }}>
+              Buy Resale — {resalePrice} {tokenSymbol}
+            </button>
+          ) : (
           /* Sold exclusive — all purchase tiers collapse into a single disabled state */
           <div
             style={{ position: "relative" }}
@@ -137,6 +148,7 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
               </div>
             )}
           </div>
+          )
         ) : (
           <>
             <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>

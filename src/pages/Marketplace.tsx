@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { SampleCard } from "../components/SampleCard";
-import { getStats } from "../contracts/crate";
+import { getStats, buyResale, submitTransaction } from "../contracts/crate";
+import { useWallet } from "../hooks/useWallet";
+import toast from "react-hot-toast";
 
-const GENRES = ["All", "Trap", "R&B", "Drill", "Afrobeats", "Lo-Fi", "Pop"];
+const GENRES = ["All", "Resales", "Trap", "R&B", "Drill", "Afrobeats", "Lo-Fi", "Pop"];
 
 const DEMO_SAMPLES = [
   { id: 1, title: "Midnight Waves", producer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5", genre: "Trap",      bpm: 140, leasePrice: 25,  premiumPrice: 150, exclusivePrice: 800  },
@@ -11,6 +13,7 @@ const DEMO_SAMPLES = [
   { id: 4, title: "Block Pressure", producer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5", genre: "Drill",     bpm: 148, leasePrice: 35,  premiumPrice: 180, exclusivePrice: 950, isExclusive: true },
   { id: 5, title: "Cloud Study",    producer: "GCYZRXMKTWA7JY475PKO5CI3R5XS6ARMHNXWLL3HWNUOJA2VR7LBWSCU",  genre: "Lo-Fi",     bpm: 72,  leasePrice: 15,  premiumPrice: 80,  exclusivePrice: 400  },
   { id: 6, title: "Runaway",        producer: "GAKWONWPGF2GZUVUOV6U67TZXYZH2AD5HVLHT2FSIY5HPZTQSQI6VPGE", genre: "Trap",      bpm: 145, leasePrice: 40,  premiumPrice: 220, exclusivePrice: 1500 },
+  { id: 7, title: "Night Walk",     producer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5", genre: "R&B",       bpm: 95,  leasePrice: 25,  premiumPrice: 100, exclusivePrice: 500, isExclusive: true, resalePrice: 800, owner: "GOWNER7JY475PKO5CI3R5XS6ARMHNXWLL3HWNUOJA2VR7LBWSCU" },
 ];
 
 export default function Marketplace() {
@@ -19,6 +22,19 @@ export default function Marketplace() {
   const [stats, setStats] = useState<{ totalSamples: number; totalVolume: string; totalProducers: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsError, setStatsError] = useState(false);
+  const { address, signTransaction } = useWallet();
+
+  const handleBuyResale = async (id: number) => {
+    if (!address) return toast.error("Connect wallet first");
+    try {
+      const xdr = await buyResale({ buyer: address, sampleId: id });
+      const signed = await signTransaction(xdr);
+      const hash = await submitTransaction(signed);
+      toast.success(`Purchased resale! Tx: ${hash.slice(0, 12)}...`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Purchase failed");
+    }
+  };
 
   useEffect(() => {
     getStats()
@@ -27,7 +43,7 @@ export default function Marketplace() {
   }, []);
 
   const filtered = DEMO_SAMPLES.filter(s =>
-    (genre === "All" || s.genre === genre) &&
+    (genre === "All" || (genre === "Resales" ? s.resalePrice !== undefined : s.genre === genre)) &&
     (!search || s.title.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -79,7 +95,8 @@ export default function Marketplace() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
             {filtered.map(s => (
               <SampleCard key={s.id} {...s}
-                onBuy={(id, tier) => console.log("Purchase", id, "tier", tier)} />
+                onBuy={(id, tier) => console.log("Purchase", id, "tier", tier)}
+                onBuyResale={(id) => handleBuyResale(id)} />
             ))}
           </div>
         )}

@@ -72,7 +72,7 @@ export default function SampleDetail() {
     );
   }
 
-  const priceXlm = stroopsToXlm(sample.price);
+  const priceXlm = stroopsToXlm(sample.lease_price);
   const producerEarning = (parseFloat(priceXlm) * 0.9).toFixed(2);
 
   return (
@@ -134,13 +134,8 @@ export default function SampleDetail() {
             {sample.bpm} BPM
           </span>
           <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-            {sample.sales_count.toString()} sales
+            {sample.total_sales.toString()} sales
           </span>
-          {!sample.active && (
-            <span className="badge" style={{ background: "rgba(239, 68, 68, 0.1)", color: "var(--error)", border: "1px solid rgba(239,68,68,0.2)" }}>
-              Delisted
-            </span>
-          )}
         </div>
 
         <div
@@ -206,7 +201,7 @@ export default function SampleDetail() {
           <button
             className="btn btn-primary btn-lg"
             onClick={handleBuy}
-            disabled={buying || !sample.active}
+            disabled={buying || sample.is_exclusive}
             style={{ width: "100%" }}
           >
             <ShoppingCart size={16} />

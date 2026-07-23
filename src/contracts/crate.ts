@@ -10,6 +10,7 @@ import {
 export interface SampleData {
   id:              number;
   uploader:        string;
+  owner:           string;
   title:           string;
   ipfs_cid:        string;
   lease_price:     bigint;
@@ -18,10 +19,8 @@ export interface SampleData {
   genre:           string;
   bpm:             number;
   is_exclusive:    boolean;
+  resale_price?:   bigint;
   total_sales:     number;
-  price:           bigint;
-  active:          boolean;
-  sales_count:     bigint;
 }
 
 export function stroopsToXlm(stroops: bigint): string {
@@ -161,4 +160,34 @@ export async function purchaseSample(params: {
 export async function withdrawEarnings(producer: string, tokenAddress: string): Promise<string> {
   const { preparedXdr } = await buildWithdrawTx(producer, tokenAddress);
   return preparedXdr;
+}
+
+export async function listResale(params: {
+  owner: string; sampleId: number; priceXlm: number;
+}): Promise<string> {
+  const src = await server().getAccount(params.owner);
+  const c   = new Contract(CONTRACT_ID);
+  const stroops = BigInt(Math.round(params.priceXlm * 1e7));
+  const tx  = new TransactionBuilder(src, { fee: "1000000", networkPassphrase: NETWORK_PASS })
+    .addOperation(c.call("list_resale",
+      new Address(params.owner).toScVal(),
+      nativeToScVal(params.sampleId, { type: "u32" }),
+      nativeToScVal(stroops,         { type: "i128" }),
+    )).setTimeout(300).build();
+  const prepared = await server().prepareTransaction(tx);
+  return prepared.toXDR();
+}
+
+export async function buyResale(params: {
+  buyer: string; sampleId: number;
+}): Promise<string> {
+  const src = await server().getAccount(params.buyer);
+  const c   = new Contract(CONTRACT_ID);
+  const tx  = new TransactionBuilder(src, { fee: "1000000", networkPassphrase: NETWORK_PASS })
+    .addOperation(c.call("buy_resale",
+      new Address(params.buyer).toScVal(),
+      nativeToScVal(params.sampleId, { type: "u32" }),
+    )).setTimeout(300).build();
+  const prepared = await server().prepareTransaction(tx);
+  return prepared.toXDR();
 }
