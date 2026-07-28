@@ -111,9 +111,8 @@ export async function getSample(sourceAddress: string, sampleId: bigint): Promis
 }
 
 export async function submitTransaction(signed: { signedTxXdr: string }): Promise<string> {
-  const { StellarBase } = await import("@stellar/stellar-sdk");
-  const tx = StellarBase.TransactionEnvelope.fromXDR(signed.signedTxXdr, "base64");
-  const result = await server().sendTransaction(tx as Parameters<typeof server>["prototype"]["sendTransaction"][0]);
+  const tx = TransactionBuilder.fromXDR(signed.signedTxXdr, NETWORK_PASS);
+  const result = await server().sendTransaction(tx);
   if (result.status === "ERROR") throw new Error("Transaction submission failed");
   return result.hash;
 }

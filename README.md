@@ -54,6 +54,7 @@ Stellar settles in **5 seconds** at **fractions of a cent**. Crate builds on top
 ### For Buyers
 - **30-second previews** — Full untagged beat unlocked only after purchase
 - **Instant ownership** — License proof stored on-chain, no disputes
+- **My Beats library** — Revisit purchased beats, receipts, and download links from one wallet-linked page
 - **Browse by genre, BPM, key, mood** — Discover exactly what you need
 - **Exclusive purchases** — Buy a beat exclusively and it's removed from the marketplace
 
@@ -150,6 +151,9 @@ Open **http://localhost:5173**
 ```env
 # Deployed contract on Stellar Testnet
 VITE_CONTRACT_ID=CA7DGEWWS3VH5J2I4I7FFEB5UHK2MJSYWDKDQKXQM7GDNLI2IRATDTLG
+
+# Token contract used for purchase + withdrawal flows
+VITE_XLM_TOKEN_ADDRESS=your_token_contract_address_here
 
 # Pinata IPFS (for beat uploads)
 VITE_PINATA_JWT=your_pinata_jwt_here

@@ -4,6 +4,7 @@ import { ArrowLeft, Play, ShoppingCart, Music, ExternalLink } from "lucide-react
 import { useWallet } from "../hooks/useWallet";
 import { getSample, purchaseSample, submitTransaction, stroopsToXlm } from "../contracts/crate";
 import type { SampleData } from "../contracts/crate";
+import { getLicenseTierLabel, savePurchaseRecord, type LicenseTier } from "../lib/purchaseHistory";
 import toast from "react-hot-toast";
 
 export default function SampleDetail() {
@@ -13,6 +14,8 @@ export default function SampleDetail() {
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
   const [purchased, setPurchased] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<LicenseTier>(0);
+  const gatewayBase = (import.meta.env.VITE_PINATA_GATEWAY as string | undefined) || "https://ipfs.io";
 
   useEffect(() => {
     if (id && /^\d+$/.test(id)) loadSample();
@@ -38,12 +41,40 @@ export default function SampleDetail() {
       return;
     }
     if (!sample) return;
+
+    const tokenAddress = import.meta.env.VITE_XLM_TOKEN_ADDRESS as string | undefined;
+    if (!tokenAddress) {
+      toast.error("XLM token address not configured");
+      return;
+    }
+
     setBuying(true);
     try {
-      const xdr = await purchaseSample({ buyer: address, sampleId: sample.id });
+      const xdr = await purchaseSample({
+        buyer: address,
+        sampleId: sample.id,
+        tokenAddress,
+        tier: selectedTier,
+      });
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
       toast.success(`Purchase successful! Tx: ${hash.slice(0, 12)}...`);
+      savePurchaseRecord({
+        buyerAddress: address,
+        sampleId: sample.id,
+        title: sample.title,
+        producer: sample.uploader,
+        genre: sample.genre,
+        bpm: sample.bpm,
+        ipfsCid: sample.ipfs_cid,
+        licenseTier: selectedTier,
+        pricePaidXlm: getSelectedPrice(sample, selectedTier),
+        txHash: hash,
+        purchasedAt: new Date().toISOString(),
+        owner: sample.owner,
+        isExclusive: selectedTier === 2 || sample.is_exclusive,
+        resalePriceXlm: sample.resale_price ? stroopsToXlm(sample.resale_price) : null,
+      });
       setPurchased(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Purchase failed");
@@ -73,7 +104,13 @@ export default function SampleDetail() {
   }
 
   const priceXlm = stroopsToXlm(sample.lease_price);
-  const producerEarning = (parseFloat(priceXlm) * 0.9).toFixed(2);
+  const selectedPriceXlm = getSelectedPrice(sample, selectedTier);
+  const producerEarning = (parseFloat(selectedPriceXlm) * 0.9).toFixed(2);
+  const tiers: { tier: LicenseTier; label: string; price: string; description: string }[] = [
+    { tier: 0, label: "Lease", price: stroopsToXlm(sample.lease_price), description: "Non-exclusive use" },
+    { tier: 1, label: "Premium", price: stroopsToXlm(sample.premium_price), description: "Commercial rights" },
+    { tier: 2, label: "Exclusive", price: stroopsToXlm(sample.exclusive_price), description: "Full ownership transfer" },
+  ];
 
   return (
     <main className="container" style={{ paddingTop: "40px", paddingBottom: "80px", maxWidth: "800px" }}>
@@ -156,13 +193,46 @@ export default function SampleDetail() {
             </div>
           </div>
           <a
-            href={`https://ipfs.io/ipfs/${sample.ipfs_cid}`}
+            href={`${gatewayBase.replace(/\/$/, "")}/ipfs/${sample.ipfs_cid}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "var(--accent)", display: "flex", alignItems: "center", gap: 4, fontSize: "12px" }}
           >
             View <ExternalLink size={12} />
           </a>
+        </div>
+
+        <div style={{ display: "grid", gap: 10, marginBottom: "24px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 600 }}>Choose your license</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+            {tiers.map((tierOption) => (
+              <button
+                key={tierOption.tier}
+                type="button"
+                onClick={() => setSelectedTier(tierOption.tier)}
+                style={{
+                  textAlign: "left",
+                  padding: "14px",
+                  borderRadius: "var(--radius)",
+                  border:
+                    selectedTier === tierOption.tier
+                      ? "1px solid rgba(250, 204, 21, 0.45)"
+                      : "1px solid var(--border)",
+                  background:
+                    selectedTier === tierOption.tier
+                      ? "rgba(250, 204, 21, 0.08)"
+                      : "var(--surface-2)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                <div style={{ fontSize: "12px", color: selectedTier === tierOption.tier ? "var(--accent)" : "var(--text-secondary)", fontWeight: 700, marginBottom: 6 }}>
+                  {tierOption.label}
+                </div>
+                <div style={{ fontSize: "20px", fontWeight: 800, marginBottom: 4 }}>{tierOption.price} XLM</div>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{tierOption.description}</div>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div
@@ -178,7 +248,7 @@ export default function SampleDetail() {
             color: "var(--text-secondary)",
           }}
         >
-          <span>Producer earns:</span>
+          <span>{getLicenseTierLabel(selectedTier)} producer payout:</span>
           <span style={{ color: "var(--success)", fontWeight: 600 }}>{producerEarning} XLM (90%)</span>
         </div>
 
@@ -188,7 +258,7 @@ export default function SampleDetail() {
               Purchase complete!
             </div>
             <a
-              href={`https://ipfs.io/ipfs/${sample.ipfs_cid}`}
+              href={`${gatewayBase.replace(/\/$/, "")}/ipfs/${sample.ipfs_cid}`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-primary"
@@ -196,6 +266,9 @@ export default function SampleDetail() {
               Download from IPFS
               <ExternalLink size={14} />
             </a>
+            <Link to="/my-beats" className="btn btn-secondary" style={{ marginTop: 10 }}>
+              Open My Beats
+            </Link>
           </div>
         ) : (
           <button
@@ -205,10 +278,23 @@ export default function SampleDetail() {
             style={{ width: "100%" }}
           >
             <ShoppingCart size={16} />
-            {buying ? "Processing..." : `Buy for ${priceXlm} XLM`}
+            {buying ? "Processing..." : `Buy ${getLicenseTierLabel(selectedTier)} - ${selectedPriceXlm} XLM`}
           </button>
         )}
       </div>
     </main>
   );
+}
+
+function getSelectedPrice(sample: SampleData, tier: LicenseTier): string {
+  switch (tier) {
+    case 0:
+      return stroopsToXlm(sample.lease_price);
+    case 1:
+      return stroopsToXlm(sample.premium_price);
+    case 2:
+      return stroopsToXlm(sample.exclusive_price);
+    default:
+      return stroopsToXlm(sample.lease_price);
+  }
 }

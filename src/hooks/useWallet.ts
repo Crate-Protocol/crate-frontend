@@ -95,7 +95,7 @@ export function useWallet(): WalletState {
   }, []);
 
   const signTransaction = useCallback(async (xdr: string) => {
-    const { signedTxXdr } = await getKit().signTransaction(xdr, { network: NETWORK });
+    const { signedTxXdr } = await getKit().signTransaction(xdr, { networkPassphrase: NETWORK });
     return { signedTxXdr };
   }, []);
 
