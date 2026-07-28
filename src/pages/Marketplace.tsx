@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { SampleCard } from "../components/SampleCard";
-import { getStats, buyResale, submitTransaction } from "../contracts/crate";
+import { getSample, getStats, buyResale, purchaseSample, submitTransaction, stroopsToXlm } from "../contracts/crate";
+import type { SampleData } from "../contracts/crate";
 import { useWallet } from "../hooks/useWallet";
+import { savePurchaseRecord, type LicenseTier } from "../lib/purchaseHistory";
 import toast from "react-hot-toast";
 
 const GENRES = ["All", "Resales", "Trap", "R&B", "Drill", "Afrobeats", "Lo-Fi", "Pop"];
@@ -22,7 +24,58 @@ export default function Marketplace() {
   const [stats, setStats] = useState<{ totalSamples: number; totalVolume: string; totalProducers: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsError, setStatsError] = useState(false);
-  const { address, signTransaction } = useWallet();
+  const { address, isConnected, connect, signTransaction } = useWallet();
+
+  const handleBuy = async (id: number, tier: number) => {
+    if (!isConnected || !address) {
+      await connect();
+      return;
+    }
+
+    const tokenAddress = import.meta.env.VITE_XLM_TOKEN_ADDRESS as string | undefined;
+    if (!tokenAddress) {
+      toast.error("XLM token address not configured");
+      return;
+    }
+
+    try {
+      const sample = await getSample(address, BigInt(id));
+      if (!sample) {
+        toast.error("Failed to load beat details");
+        return;
+      }
+
+      const xdr = await purchaseSample({
+        buyer: address,
+        sampleId: id,
+        tokenAddress,
+        tier,
+      });
+      const signed = await signTransaction(xdr);
+      const hash = await submitTransaction(signed);
+
+      savePurchaseRecord({
+        buyerAddress: address,
+        sampleId: sample.id,
+        title: sample.title,
+        producer: sample.uploader,
+        genre: sample.genre,
+        bpm: sample.bpm,
+        ipfsCid: sample.ipfs_cid,
+        licenseTier: normalizeLicenseTier(tier),
+        pricePaidXlm: getTierPrice(sample, normalizeLicenseTier(tier)),
+        txHash: hash,
+        purchasedAt: new Date().toISOString(),
+        owner: sample.owner,
+        isExclusive: tier === 2 || sample.is_exclusive,
+        resalePriceXlm: sample.resale_price ? stroopsToXlm(sample.resale_price) : null,
+      });
+
+      toast.success(`Purchase successful! Tx: ${hash.slice(0, 12)}...`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Purchase failed");
+    }
+  };
 
   const handleBuyResale = async (id: number) => {
     if (!address) return toast.error("Connect wallet first");
@@ -94,13 +147,43 @@ export default function Marketplace() {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
             {filtered.map(s => (
-              <SampleCard key={s.id} {...s}
-                onBuy={(id, tier) => console.log("Purchase", id, "tier", tier)}
-                onBuyResale={(id) => handleBuyResale(id)} />
+              <SampleCard
+                key={s.id}
+                id={s.id}
+                title={s.title}
+                producer={s.producer}
+                genre={s.genre}
+                bpm={s.bpm}
+                leasePrice={s.leasePrice}
+                premiumPrice={s.premiumPrice}
+                exclusivePrice={s.exclusivePrice}
+                isExclusive={s.isExclusive}
+                resalePrice={s.resalePrice}
+                owner={s.owner}
+                onBuy={(id, tier) => void handleBuy(id, tier)}
+                onBuyResale={(id) => void handleBuyResale(id)}
+              />
             ))}
           </div>
         )}
       </div>
     </div>
   );
+}
+
+function normalizeLicenseTier(tier: number): LicenseTier {
+  return tier === 1 || tier === 2 ? tier : 0;
+}
+
+function getTierPrice(sample: SampleData, tier: LicenseTier): string {
+  switch (tier) {
+    case 0:
+      return stroopsToXlm(sample.lease_price);
+    case 1:
+      return stroopsToXlm(sample.premium_price);
+    case 2:
+      return stroopsToXlm(sample.exclusive_price);
+    default:
+      return stroopsToXlm(sample.lease_price);
+  }
 }

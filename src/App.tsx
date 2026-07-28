@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Marketplace from "./pages/Marketplace";
 import Upload from "./pages/Upload";
 import Profile from "./pages/Profile";
+import MyBeats from "./pages/MyBeats";
 import SampleDetail from "./pages/SampleDetail";
 import Navbar from "./components/Navbar";
 
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/my-beats" element={<MyBeats />} />
         <Route path="/sample/:id" element={<SampleDetail />} />
         <Route path="*" element={
           <main style={{ textAlign: "center", paddingTop: "80px", color: "var(--text-secondary)" }}>
