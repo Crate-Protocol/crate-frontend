@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import WalletButton from "./WalletButton";
+import NotificationDropdown from "./NotificationDropdown";
 
 const NAV_LINKS = [
   { label: "Marketplace", path: "/marketplace" },
@@ -31,7 +32,7 @@ export default function Navbar() {
           justifyContent: "space-between",
         }}
       >
-                <Link
+        <Link
           to="/"
           style={{
             fontSize: "18px",
@@ -71,7 +72,10 @@ export default function Navbar() {
           ))}
         </nav>
 
-                <WalletButton />
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <NotificationDropdown />
+          <WalletButton />
+        </div>
       </div>
     </nav>
   );
