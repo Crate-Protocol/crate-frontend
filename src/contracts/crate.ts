@@ -104,10 +104,27 @@ export async function getLicense(holderAddress: string, sampleId: number): Promi
   );
 }
 
-export async function getSample(sourceAddress: string, sampleId: bigint): Promise<SampleData | null> {
+export async function getSample(sourceAddress: string, sampleId: bigint | number): Promise<SampleData | null> {
   if (!CONTRACT_ID) return null;
   const c = new Contract(CONTRACT_ID);
   return read<SampleData>(sourceAddress, c.call("get_sample", nativeToScVal(Number(sampleId), { type: "u32" })));
+}
+
+export async function getSamplesByUploader(uploaderAddress: string): Promise<SampleData[]> {
+  if (!CONTRACT_ID || !uploaderAddress) return [];
+  try {
+    const stats = await getStats();
+    const samples: SampleData[] = [];
+    for (let id = 1; id <= stats.totalSamples; id++) {
+      const sample = await getSample(uploaderAddress, id);
+      if (sample && sample.uploader === uploaderAddress) {
+        samples.push(sample);
+      }
+    }
+    return samples;
+  } catch {
+    return [];
+  }
 }
 
 export async function submitTransaction(signed: { signedTxXdr: string }): Promise<string> {
