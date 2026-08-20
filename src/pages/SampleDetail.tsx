@@ -288,6 +288,7 @@ export default function SampleDetail() {
           priceXlm={priceXlm}
           sampleId={sample.id}
           sampleTitle={sample.title}
+          stellarRecipient={address || ""}
           onPurchaseComplete={() => {
             setPurchased(true);
             setShowCrossChain(false);

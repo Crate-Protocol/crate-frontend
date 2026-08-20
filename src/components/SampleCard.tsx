@@ -19,7 +19,7 @@ interface SampleCardProps {
   onBuyResale?: (id: number) => void;
   xlmBalance?: string;
   usdcBalance?: string;
-  onBuyCrossChain?: (id: number) => void;
+  onBuyCrossChain?: (id: number, tier: number) => void;
 }
 
 const BARS = [40, 65, 50, 80, 45, 70, 55, 75, 42, 68, 52, 78, 46, 72, 58];
@@ -189,7 +189,7 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
             )}
             {onBuyCrossChain && selected !== null && (
               <button
-                onClick={() => onBuyCrossChain(id)}
+                onClick={() => onBuyCrossChain(id, selected)}
                 style={{
                   width: "100%", background: "transparent", border: "1px solid #1a1a1a",
                   borderRadius: 12, padding: "8px", fontSize: 12, fontWeight: 600,

@@ -121,8 +121,8 @@ export function useCrossChainPayment(): CrossChainPaymentState & CrossChainPayme
       setStep("attesting");
       const attestation = await pollAttestation(
         messageHash,
-        60,
-        (attempt) => setAttestationProgress(Math.min(attempt / 60, 0.95)),
+        90,
+        (attempt) => setAttestationProgress(Math.min(attempt / 90, 0.95)),
       );
       setAttestationProgress(1);
       updateTransfer(id, { attestation, status: "minting" });

@@ -244,10 +244,12 @@ export function generateTransferId(): string {
   return `cctp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** Poll attestation with exponential backoff. Returns the attestation string. */
+/** Poll attestation with exponential backoff. Returns the attestation string.
+ *  @param maxAttempts - default 90 (~10 min with 3s start, 1.3x backoff, 15s cap)
+ */
 export async function pollAttestation(
   messageHash: string,
-  maxAttempts = 60,
+  maxAttempts = 90,
   onStatus?: (attempt: number, status: string) => void,
 ): Promise<string> {
   let delay = 3000; // Start at 3s

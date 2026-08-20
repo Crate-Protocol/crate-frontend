@@ -24,7 +24,7 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [statsError, setStatsError] = useState(false);
   const { address, signTransaction, balances } = useWallet();
-  const [crossChainSample, setCrossChainSample] = useState<{ id: number; title: string; priceXlm: string } | null>(null);
+  const [crossChainSample, setCrossChainSample] = useState<{ id: number; title: string; priceXlm: string; tier: number } | null>(null);
 
   const handleBuyResale = async (id: number) => {
     if (!address) return toast.error("Connect wallet first");
@@ -101,9 +101,11 @@ export default function Marketplace() {
                 usdcBalance={balances.usdc}
                 onBuy={(id, tier) => console.log("Purchase", id, "tier", tier)}
                 onBuyResale={(id) => handleBuyResale(id)}
-                onBuyCrossChain={(id) => {
+                onBuyCrossChain={(id, tier) => {
                   const sample = DEMO_SAMPLES.find(d => d.id === id);
-                  if (sample) setCrossChainSample({ id: sample.id, title: sample.title, priceXlm: String(sample.leasePrice) });
+                  if (!sample) return;
+                  const prices = [sample.leasePrice, sample.premiumPrice, sample.exclusivePrice];
+                  setCrossChainSample({ id: sample.id, title: sample.title, priceXlm: String(prices[tier] ?? sample.leasePrice), tier });
                 }}
               />
             ))}
@@ -118,6 +120,7 @@ export default function Marketplace() {
           priceXlm={crossChainSample.priceXlm}
           sampleId={crossChainSample.id}
           sampleTitle={crossChainSample.title}
+          stellarRecipient={address || ""}
           onPurchaseComplete={() => {
             toast.success(`Purchased "${crossChainSample.title}" via cross-chain USDC!`);
             setCrossChainSample(null);

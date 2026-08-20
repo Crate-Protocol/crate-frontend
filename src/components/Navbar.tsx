@@ -21,7 +21,6 @@ export default function Navbar() {
   }, []);
 
   return (
-    <>
     <nav
       style={{
         height: "64px",
@@ -101,6 +100,5 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
-    </>
   );
 }

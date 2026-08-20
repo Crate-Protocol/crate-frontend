@@ -29,6 +29,8 @@ interface CrossChainPaymentModalProps {
   priceXlm: string;
   sampleId: number;
   sampleTitle: string;
+  /** Stellar G... address that receives the minted USDC. */
+  stellarRecipient: string;
   /** Called after CCTP mints USDC on Stellar and the purchase succeeds. */
   onPurchaseComplete: (txHash: string) => void;
 }
@@ -55,6 +57,7 @@ export default function CrossChainPaymentModal({
   priceXlm,
   sampleId,
   sampleTitle,
+  stellarRecipient,
   onPurchaseComplete,
 }: CrossChainPaymentModalProps) {
   const evmWallet = useEVMWallet();
@@ -66,8 +69,8 @@ export default function CrossChainPaymentModal({
   const [transferId, setTransferId] = useState<string | null>(null);
   const [attestationProgress, setAttestationProgress] = useState(0);
 
-  // Approximate USDC equivalent (rough — for display only, actual amount set by buyer)
-  const usdcAmount = (parseFloat(priceXlm) * 0.12).toFixed(2); // ~$0.12 per XLM rough estimate
+  // Approximate USDC equivalent (display only — rate fetched at burn time)
+  const usdcAmount = (parseFloat(priceXlm) * 0.12).toFixed(2); // ~$0.12/XLM rough estimate
 
   // Reset state when modal opens
   useEffect(() => {
@@ -82,6 +85,13 @@ export default function CrossChainPaymentModal({
       }
     }
   }, [isOpen, chains, selectedChain]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    if (isOpen) window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isOpen, onClose]);
 
   // Check for existing in-progress transfer
   useEffect(() => {
@@ -99,8 +109,8 @@ export default function CrossChainPaymentModal({
       try {
         const attestation = await pollAttestation(
           transfer.messageHash,
-          60,
-          (attempt) => setAttestationProgress(Math.min(attempt / 60, 0.95)),
+          90,
+          (attempt) => setAttestationProgress(Math.min(attempt / 90, 0.95)),
         );
         updateTransfer(transfer.id, { status: "minting", attestation });
         setStep("minting");
@@ -163,7 +173,7 @@ export default function CrossChainPaymentModal({
       const { txHash, messageHash, messageBytes } = await burnUSDC({
         chainId: selectedChain.id,
         amount: usdcAmount,
-        stellarRecipient: evmWallet.address, // TODO: use actual Stellar address from useWallet
+        stellarRecipient,
       });
       updateTransfer(id, { sourceTxHash: txHash, messageHash, messageBytes, status: "attesting" });
       toast.success(`Burned USDC on ${selectedChain.shortName}! Waiting for attestation...`);
@@ -205,12 +215,17 @@ export default function CrossChainPaymentModal({
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 200,
-      background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: "16px",
-    }} onClick={onClose}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "16px",
+      }}
+      onClick={onClose}
+    >
       <div
         className="card animate-fade-in"
         style={{ width: "100%", maxWidth: 480, padding: "28px" }}
@@ -322,7 +337,7 @@ export default function CrossChainPaymentModal({
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                 <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Amount</span>
-                <span style={{ fontSize: "14px", fontWeight: 600 }}>{usdcAmount} USDC</span>
+                <span style={{ fontSize: "14px", fontWeight: 600 }}>~{usdcAmount} USDC <span style={{ fontSize: "11px", fontWeight: 400, color: "var(--text-muted)" }}>(estimated)</span></span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                 <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Source chain</span>
