@@ -14,6 +14,16 @@ const NETWORK = (import.meta.env.VITE_NETWORK as string) === "MAINNET"
 const HORIZON_URL = (import.meta.env.VITE_HORIZON_URL as string)
   ?? "https://horizon-testnet.stellar.org";
 
+// Well-known asset issuers on Stellar
+const USDC_ISSUER = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
+const YXLM_ISSUER = "GARDNV3Q7YGT4AKRSQOHHBMYHAXQGJEOOMYK7LILLXF5Y3Y6OVMLWDNG";
+
+export interface TokenBalances {
+  native: string;
+  usdc: string;
+  yxlm: string;
+}
+
 const WALLET_KEY       = "crate_wallet";
 const DISCONNECTED_KEY = "crate_wallet_disconnected";
 
@@ -33,6 +43,7 @@ function getKit(): StellarWalletsKit {
 interface WalletState {
   address: string | null;
   balance: string;
+  balances: TokenBalances;
   isConnecting: boolean;
   isLoading: boolean;
   isConnected: boolean;
@@ -44,15 +55,38 @@ interface WalletState {
 export function useWallet(): WalletState {
   const [address, setAddress]         = useState<string | null>(null);
   const [balance, setBalance]         = useState("0");
+  const [balances, setBalances]       = useState<TokenBalances>({ native: "0", usdc: "0", yxlm: "0" });
   const [isConnecting, setConnecting] = useState(false);
 
   const fetchBalance = useCallback(async (addr: string) => {
     try {
       const server  = new Horizon.Server(HORIZON_URL);
       const account = await server.loadAccount(addr);
-      const native  = account.balances.find(b => b.asset_type === "native");
-      setBalance(native ? parseFloat(native.balance).toFixed(2) : "0");
-    } catch { setBalance("0"); }
+
+      const native = account.balances.find(b => b.asset_type === "native");
+      const nativeBal = native ? parseFloat(native.balance).toFixed(2) : "0";
+      setBalance(nativeBal);
+
+      const usdc = account.balances.find(
+        b => b.asset_type !== "native" &&
+             "asset_code" in b && b.asset_code === "USDC" &&
+             "asset_issuer" in b && b.asset_issuer === USDC_ISSUER
+      );
+      const yxlm = account.balances.find(
+        b => b.asset_type !== "native" &&
+             "asset_code" in b && b.asset_code === "yXLM" &&
+             "asset_issuer" in b && b.asset_issuer === YXLM_ISSUER
+      );
+
+      setBalances({
+        native: nativeBal,
+        usdc: usdc ? parseFloat(usdc.balance).toFixed(2) : "0",
+        yxlm: yxlm ? parseFloat(yxlm.balance).toFixed(2) : "0",
+      });
+    } catch {
+      setBalance("0");
+      setBalances({ native: "0", usdc: "0", yxlm: "0" });
+    }
   }, []);
 
   useEffect(() => {
@@ -89,6 +123,7 @@ export function useWallet(): WalletState {
     kit = null;
     setAddress(null);
     setBalance("0");
+    setBalances({ native: "0", usdc: "0", yxlm: "0" });
     localStorage.removeItem(WALLET_KEY);
     // Persist intent to stay disconnected across refreshes.
     localStorage.setItem(DISCONNECTED_KEY, "true");
@@ -101,5 +136,5 @@ export function useWallet(): WalletState {
 
   const isConnected = address !== null;
   const isLoading   = isConnecting;
-  return { address, balance, isConnecting, isLoading, isConnected, connect, disconnect, signTransaction };
+  return { address, balance, balances, isConnecting, isLoading, isConnected, connect, disconnect, signTransaction };
 }
