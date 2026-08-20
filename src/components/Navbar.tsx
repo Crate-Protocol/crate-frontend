@@ -101,7 +101,6 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
-    <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </>
   );
 }
