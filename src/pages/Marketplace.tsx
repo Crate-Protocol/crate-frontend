@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { SampleCard } from "../components/SampleCard";
+import { CrossChainPaymentModal } from "../components/CrossChainPaymentModal";
 import { getStats, buyResale, submitTransaction } from "../contracts/crate";
 import { useWallet } from "../hooks/useWallet";
 import toast from "react-hot-toast";
@@ -23,6 +24,7 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [statsError, setStatsError] = useState(false);
   const { address, signTransaction, balances } = useWallet();
+  const [crossChainSample, setCrossChainSample] = useState<{ id: number; title: string; priceXlm: string; tier: number } | null>(null);
 
   const handleBuyResale = async (id: number) => {
     if (!address) return toast.error("Connect wallet first");
@@ -98,11 +100,33 @@ export default function Marketplace() {
                 xlmBalance={balances.native}
                 usdcBalance={balances.usdc}
                 onBuy={(id, tier) => console.log("Purchase", id, "tier", tier)}
-                onBuyResale={(id) => handleBuyResale(id)} />
+                onBuyResale={(id) => handleBuyResale(id)}
+                onBuyCrossChain={(id, tier) => {
+                  const sample = DEMO_SAMPLES.find(d => d.id === id);
+                  if (!sample) return;
+                  const prices = [sample.leasePrice, sample.premiumPrice, sample.exclusivePrice];
+                  setCrossChainSample({ id: sample.id, title: sample.title, priceXlm: String(prices[tier] ?? sample.leasePrice), tier });
+                }}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {crossChainSample && (
+        <CrossChainPaymentModal
+          isOpen={!!crossChainSample}
+          onClose={() => setCrossChainSample(null)}
+          priceXlm={crossChainSample.priceXlm}
+          sampleId={crossChainSample.id}
+          sampleTitle={crossChainSample.title}
+          stellarRecipient={address || ""}
+          onPurchaseComplete={() => {
+            toast.success(`Purchased "${crossChainSample.title}" via cross-chain USDC!`);
+            setCrossChainSample(null);
+          }}
+        />
+      )}
     </div>
   );
 }

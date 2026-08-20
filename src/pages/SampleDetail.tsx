@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Play, ShoppingCart, Music, ExternalLink } from "lucide-react";
+import { ArrowLeft, Play, ShoppingCart, Music, ExternalLink, Link as LinkIcon } from "lucide-react";
 import { useWallet } from "../hooks/useWallet";
 import { useTransactionHistory } from "../hooks/useTransactionHistory";
 import { getSample, purchaseSample, submitTransaction, stroopsToXlm } from "../contracts/crate";
 import type { SampleData } from "../contracts/crate";
 import { TokenSelector } from "../components/TokenSelector";
 import { PaymentConfirmModal } from "../components/PaymentConfirmModal";
+import { CrossChainPaymentModal } from "../components/CrossChainPaymentModal";
 import { convertToken } from "../services/pricing";
 import { USDC_ISSUER, YXLM_ISSUER } from "../constants/tokens";
 import toast from "react-hot-toast";
@@ -31,6 +32,7 @@ export default function SampleDetail() {
   const [selectedTier, setSelectedTier] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [displayPrice, setDisplayPrice] = useState<number | null>(null);
+  const [showCrossChain, setShowCrossChain] = useState(false);
 
   useEffect(() => {
     if (id && /^\d+$/.test(id)) loadSample();
@@ -251,7 +253,7 @@ export default function SampleDetail() {
             </a>
           </div>
         ) : (
-          <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ marginBottom: 12 }}>
               <TokenSelector
                 selected={selectedToken}
@@ -268,8 +270,30 @@ export default function SampleDetail() {
               <ShoppingCart size={16} />
               {buying ? "Processing..." : `Pay with ${selectedToken} — ${currentPrice.toFixed(2)} ${selectedToken}`}
             </button>
-          </>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowCrossChain(true)}
+              disabled={sample.is_exclusive}
+              style={{ width: "100%" }}
+            >
+              <LinkIcon size={14} />
+              Pay with USDC (cross-chain)
+            </button>
+          </div>
         )}
+
+        <CrossChainPaymentModal
+          isOpen={showCrossChain}
+          onClose={() => setShowCrossChain(false)}
+          priceXlm={priceXlm}
+          sampleId={sample.id}
+          sampleTitle={sample.title}
+          stellarRecipient={address || ""}
+          onPurchaseComplete={() => {
+            setPurchased(true);
+            setShowCrossChain(false);
+          }}
+        />
       </div>
 
       <PaymentConfirmModal
