@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Shield, Loader2 } from "lucide-react";
 import { toUSD, formatUSD, convertToken, SUPPORTED_TOKENS } from "../services/pricing";
+import { PRODUCER_SHARE, PLATFORM_FEE } from "../constants/tokens";
 import type { TokenBalances } from "../hooks/useWallet";
 
 interface PaymentConfirmModalProps {
@@ -44,8 +45,8 @@ export function PaymentConfirmModal({
 
   if (!open) return null;
 
-  const producerEarning = (priceInToken * 0.9).toFixed(2);
-  const platformFee = (priceInToken * 0.1).toFixed(2);
+  const producerEarning = (priceInToken * PRODUCER_SHARE).toFixed(2);
+  const platformFee = (priceInToken * PLATFORM_FEE).toFixed(2);
   const tokenInfo = SUPPORTED_TOKENS[selectedToken] ?? SUPPORTED_TOKENS.native;
 
   async function handleConfirm() {

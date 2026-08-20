@@ -1,13 +1,9 @@
 import { Horizon } from "@stellar/stellar-sdk";
+import { USDC_ISSUER, YXLM_ISSUER, TOKEN_DECIMALS } from "../constants/tokens";
 
 const HORIZON_URL =
   (import.meta.env.VITE_HORIZON_URL as string) ??
   "https://horizon-testnet.stellar.org";
-
-// Stellar testnet USDC issuer
-const USDC_ISSUER = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
-// yXLM issuer (apay)
-const YXLM_ISSUER = "GARDNV3Q7YGT4AKRSQOHHBMYHAXQGJEOOMYK7LILLXF5Y3Y6OVMLWDNG";
 
 export interface TokenInfo {
   code: string;

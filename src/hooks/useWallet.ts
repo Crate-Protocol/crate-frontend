@@ -6,6 +6,7 @@ import {
   FreighterModule,
 } from "@creit.tech/stellar-wallets-kit";
 import { Horizon } from "@stellar/stellar-sdk";
+import { USDC_ISSUER, YXLM_ISSUER } from "../constants/tokens";
 
 const NETWORK = (import.meta.env.VITE_NETWORK as string) === "MAINNET"
   ? WalletNetwork.PUBLIC
@@ -13,10 +14,6 @@ const NETWORK = (import.meta.env.VITE_NETWORK as string) === "MAINNET"
 
 const HORIZON_URL = (import.meta.env.VITE_HORIZON_URL as string)
   ?? "https://horizon-testnet.stellar.org";
-
-// Well-known asset issuers on Stellar
-const USDC_ISSUER = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
-const YXLM_ISSUER = "GARDNV3Q7YGT4AKRSQOHHBMYHAXQGJEOOMYK7LILLXF5Y3Y6OVMLWDNG";
 
 export interface TokenBalances {
   native: string;
