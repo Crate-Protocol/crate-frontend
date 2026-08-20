@@ -22,7 +22,7 @@ export default function Marketplace() {
   const [stats, setStats] = useState<{ totalSamples: number; totalVolume: string; totalProducers: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsError, setStatsError] = useState(false);
-  const { address, signTransaction } = useWallet();
+  const { address, signTransaction, balances } = useWallet();
 
   const handleBuyResale = async (id: number) => {
     if (!address) return toast.error("Connect wallet first");
@@ -95,6 +95,8 @@ export default function Marketplace() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
             {filtered.map(s => (
               <SampleCard key={s.id} {...s}
+                xlmBalance={balances.native}
+                usdcBalance={balances.usdc}
                 onBuy={(id, tier) => console.log("Purchase", id, "tier", tier)}
                 onBuyResale={(id) => handleBuyResale(id)} />
             ))}
