@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Lock, Play, Pause } from "lucide-react";
 import { AudioWaveform } from "./AudioWaveform";
+import { useAudioPreview, MAX_PREVIEW_DURATION } from "../hooks/useAudioPreview";
 
 export interface SampleCardProps {
   id: number;
@@ -45,60 +46,61 @@ export function SampleCard({
 }: SampleCardProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [isCardHovered, setIsCardHovered] = useState(false);
 
-  const duration = 30; // 30-second preview duration
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Playback timer simulation if no native audioUrl or while playing
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (isPlaying) {
-      const stepMs = 100;
-      const progressIncrement = stepMs / (duration * 1000);
-      interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 1) {
-            setIsPlaying(false);
-            onPlayToggle?.(id, false);
-            return 0;
-          }
-          return prev + progressIncrement;
-        });
-      }, stepMs);
-    } else if (progress >= 1) {
-      setProgress(0);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isPlaying, duration, id, onPlayToggle, progress]);
+  const audioPreview = useAudioPreview();
+  const isThisActive = audioPreview.currentTrack?.id === id;
+  const isPlaying = isThisActive ? audioPreview.isPlaying : false;
+  const progress = isThisActive ? audioPreview.progress : 0;
+  const duration = MAX_PREVIEW_DURATION; // 30-second preview duration
 
   const handleTogglePlay = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const nextState = !isPlaying;
-    setIsPlaying(nextState);
-    onPlayToggle?.(id, nextState);
-
-    if (audioRef.current) {
-      if (nextState) {
-        audioRef.current.play().catch(() => {});
-      } else {
-        audioRef.current.pause();
-      }
+    if (isThisActive) {
+      const nextState = !isPlaying;
+      audioPreview.togglePlay();
+      onPlayToggle?.(id, nextState);
+    } else {
+      audioPreview.play({
+        id,
+        title,
+        producer,
+        genre,
+        bpm,
+        leasePrice,
+        premiumPrice,
+        exclusivePrice,
+        price: resalePrice || leasePrice,
+        tokenSymbol,
+        isExclusive,
+        resalePrice,
+        audioUrl,
+      });
+      onPlayToggle?.(id, true);
     }
   };
 
   const handleSeek = (newProgress: number) => {
-    setProgress(newProgress);
-    if (audioRef.current && audioRef.current.duration) {
-      audioRef.current.currentTime = newProgress * audioRef.current.duration;
+    if (!isThisActive) {
+      audioPreview.play({
+        id,
+        title,
+        producer,
+        genre,
+        bpm,
+        leasePrice,
+        premiumPrice,
+        exclusivePrice,
+        price: resalePrice || leasePrice,
+        tokenSymbol,
+        isExclusive,
+        resalePrice,
+        audioUrl,
+      });
     }
+    audioPreview.seekToRatio(newProgress);
   };
 
   const tiers = [
@@ -121,23 +123,6 @@ export function SampleCard({
         borderColor: isPlaying ? "rgba(250, 204, 21, 0.3)" : undefined,
       }}
     >
-      {audioUrl && (
-        <audio
-          ref={audioRef}
-          src={audioUrl}
-          onTimeUpdate={() => {
-            if (audioRef.current && audioRef.current.duration) {
-              setProgress(audioRef.current.currentTime / audioRef.current.duration);
-            }
-          }}
-          onEnded={() => {
-            setIsPlaying(false);
-            setProgress(0);
-            onPlayToggle?.(id, false);
-          }}
-        />
-      )}
-
       {/* Beat art & Waveform area */}
       <div style={{ position: "relative", background: "#0a0a0a", height: 80, overflow: "hidden" }}>
         <Link
