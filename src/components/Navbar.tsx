@@ -1,5 +1,8 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import WalletButton from "./WalletButton";
+import { getPendingCount } from "../services/cctpStore";
 
 const NAV_LINKS = [
   { label: "Marketplace", path: "/marketplace" },
@@ -9,8 +12,16 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const { pathname } = useLocation();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    setPendingCount(getPendingCount());
+    const interval = setInterval(() => setPendingCount(getPendingCount()), 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
+    <>
     <nav
       style={{
         height: "64px",
@@ -71,8 +82,26 @@ export default function Navbar() {
           ))}
         </nav>
 
-                <WalletButton />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {pendingCount > 0 && (
+            <div
+              title={`${pendingCount} pending cross-chain transfer${pendingCount > 1 ? "s" : ""}`}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "4px 10px", borderRadius: "var(--radius)",
+                background: "rgba(250,204,21,0.1)", border: "1px solid rgba(250,204,21,0.2)",
+                fontSize: "12px", fontWeight: 600, color: "var(--accent)",
+              }}
+            >
+              <Loader2 size={12} style={{ animation: "spin 1.5s linear infinite" }} />
+              {pendingCount}
+            </div>
+          )}
+          <WalletButton />
+        </div>
       </div>
     </nav>
+    <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    </>
   );
 }
