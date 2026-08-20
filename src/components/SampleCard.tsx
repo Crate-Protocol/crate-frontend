@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Lock } from "lucide-react";
+import { Lock, Link as LinkIcon } from "lucide-react";
 
 interface SampleCardProps {
   id: number;
@@ -19,6 +19,7 @@ interface SampleCardProps {
   onBuyResale?: (id: number) => void;
   xlmBalance?: string;
   usdcBalance?: string;
+  onBuyCrossChain?: (id: number) => void;
 }
 
 const BARS = [40, 65, 50, 80, 45, 70, 55, 75, 42, 68, 52, 78, 46, 72, 58];
@@ -26,7 +27,7 @@ const BARS = [40, 65, 50, 80, 45, 70, 55, 75, 42, 68, 52, 78, 46, 72, 58];
 const EXCLUSIVE_TOOLTIP =
   "This beat was bought as an Exclusive license — the buyer now owns full rights, so it can no longer be purchased on any tier.";
 
-export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiumPrice, exclusivePrice, tokenSymbol = "XLM", isExclusive = false, resalePrice, owner, onBuy, onBuyResale, xlmBalance, usdcBalance }: SampleCardProps) {
+export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiumPrice, exclusivePrice, tokenSymbol = "XLM", isExclusive = false, resalePrice, owner, onBuy, onBuyResale, xlmBalance, usdcBalance, onBuyCrossChain }: SampleCardProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -185,6 +186,20 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
                   </span>
                 )}
               </div>
+            )}
+            {onBuyCrossChain && selected !== null && (
+              <button
+                onClick={() => onBuyCrossChain(id)}
+                style={{
+                  width: "100%", background: "transparent", border: "1px solid #1a1a1a",
+                  borderRadius: 12, padding: "8px", fontSize: 12, fontWeight: 600,
+                  color: "#737373", cursor: "pointer", marginTop: 6,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                  transition: "all 0.15s",
+                }}
+              >
+                <LinkIcon size={12} /> or pay with USDC (cross-chain)
+              </button>
             )}
           </>
         )}
