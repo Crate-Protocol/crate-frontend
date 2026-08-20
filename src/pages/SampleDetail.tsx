@@ -8,7 +8,16 @@ import type { SampleData } from "../contracts/crate";
 import { TokenSelector } from "../components/TokenSelector";
 import { PaymentConfirmModal } from "../components/PaymentConfirmModal";
 import { convertToken } from "../services/pricing";
+import { USDC_ISSUER, YXLM_ISSUER } from "../constants/tokens";
 import toast from "react-hot-toast";
+
+const TIER_LABELS = ["Lease", "Premium", "Exclusive"];
+
+const TOKEN_ADDRESSES: Record<string, string> = {
+  XLM: "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+  USDC: `USDC-${USDC_ISSUER}`,
+  yXLM: `yXLM-${YXLM_ISSUER}`,
+};
 
 export default function SampleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +28,7 @@ export default function SampleDetail() {
   const [buying, setBuying] = useState(false);
   const [purchased, setPurchased] = useState(false);
   const [selectedToken, setSelectedToken] = useState("XLM");
+  const [selectedTier, setSelectedTier] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [displayPrice, setDisplayPrice] = useState<number | null>(null);
 
@@ -61,27 +71,28 @@ export default function SampleDetail() {
   }
 
   async function handleConfirmPurchase() {
-    if (!sample || !address) return;
+    if (!sample || !address) return "";
     setBuying(true);
     try {
-      const tokenKey = selectedToken === "XLM" ? "native" : selectedToken;
-      const xdr = await purchaseSample({ buyer: address, sampleId: sample.id, tokenAddress: tokenKey });
+      const tokenAddress = TOKEN_ADDRESSES[selectedToken] ?? TOKEN_ADDRESSES.XLM;
+      const xdr = await purchaseSample({ buyer: address, sampleId: sample.id, tokenAddress, tier: selectedTier });
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
       addPurchase({
         txHash: hash,
         sampleId: sample.id,
         sampleTitle: sample.title,
-        tier: "Lease",
+        tier: TIER_LABELS[selectedTier] ?? "Lease",
         token: selectedToken,
         price: displayPrice ?? 0,
         status: "confirmed",
       });
       toast.success(`Purchase successful! Tx: ${hash.slice(0, 12)}...`);
       setPurchased(true);
-      setShowConfirm(false);
+      return hash;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Purchase failed");
+      throw err;
     } finally {
       setBuying(false);
     }
@@ -266,7 +277,7 @@ export default function SampleDetail() {
         onClose={() => setShowConfirm(false)}
         onConfirm={handleConfirmPurchase}
         beatTitle={sample.title}
-        tier="Lease"
+        tier={TIER_LABELS[selectedTier] ?? "Lease"}
         priceInToken={currentPrice}
         selectedToken={selectedToken}
         balances={balances}

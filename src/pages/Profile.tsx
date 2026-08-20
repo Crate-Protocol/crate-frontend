@@ -5,6 +5,8 @@ import { useTransactionHistory } from "../hooks/useTransactionHistory";
 import { getEarnings, withdrawEarnings, submitTransaction, listResale } from "../contracts/crate";
 import toast from "react-hot-toast";
 
+const EXPLORER_NETWORK = import.meta.env.VITE_NETWORK === "MAINNET" ? "public" : "testnet";
+
 export default function Profile() {
   const { address, isConnected, connect, disconnect, signTransaction } = useWallet();
   const { history, loading: historyLoading } = useTransactionHistory(address);
@@ -333,7 +335,7 @@ export default function Profile() {
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center" }}>
                       <a
-                        href={`https://stellar.expert/explorer/testnet/tx/${record.txHash}`}
+                        href={`https://stellar.expert/explorer/${EXPLORER_NETWORK}/tx/${record.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 4 }}

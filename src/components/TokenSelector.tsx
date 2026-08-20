@@ -20,13 +20,18 @@ export function TokenSelector({ selected, onSelect, balances }: TokenSelectorPro
   const [prices, setPrices] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    Promise.all(
+    Promise.allSettled(
       Object.keys(SUPPORTED_TOKENS).map(async (key) => {
         const token = SUPPORTED_TOKENS[key];
         const price = await getUSDPrice(token.code);
         return [token.code, price] as const;
       })
-    ).then((entries) => setPrices(Object.fromEntries(entries)));
+    ).then((results) => {
+      const entries = results
+        .filter((r): r is PromiseFulfilledResult<[string, number]> => r.status === "fulfilled")
+        .map((r) => r.value);
+      setPrices(Object.fromEntries(entries));
+    });
   }, []);
 
   const currentToken = SUPPORTED_TOKENS[selected] ?? SUPPORTED_TOKENS.native;

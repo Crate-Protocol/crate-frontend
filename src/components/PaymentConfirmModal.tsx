@@ -4,10 +4,16 @@ import { toUSD, formatUSD, convertToken, SUPPORTED_TOKENS } from "../services/pr
 import { PRODUCER_SHARE, PLATFORM_FEE } from "../constants/tokens";
 import type { TokenBalances } from "../hooks/useWallet";
 
+const BALANCE_MAP: Record<string, keyof TokenBalances> = {
+  XLM: "native",
+  USDC: "usdc",
+  yXLM: "yxlm",
+};
+
 interface PaymentConfirmModalProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => Promise<void>;
+  onConfirm: () => Promise<string>;
   beatTitle: string;
   tier: string;
   priceInToken: number;
@@ -23,6 +29,7 @@ export function PaymentConfirmModal({
   tier,
   priceInToken,
   selectedToken,
+  balances,
 }: PaymentConfirmModalProps) {
   const [usdEquiv, setUsdEquiv] = useState<number | null>(null);
   const [priceInXlm, setPriceInXlm] = useState<number | null>(null);
@@ -52,7 +59,8 @@ export function PaymentConfirmModal({
   async function handleConfirm() {
     setLoading(true);
     try {
-      await onConfirm();
+      const hash = await onConfirm();
+      setTxHash(hash);
     } finally {
       setLoading(false);
     }
@@ -185,12 +193,29 @@ export function PaymentConfirmModal({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            marginBottom: 20,
+            marginBottom: 12,
           }}
         >
           <Shield size={12} />
           <span>Network fee: ~0.00001 XLM (Stellar)</span>
         </div>
+
+        {/* Insufficient balance warning */}
+        {parseFloat(balances[BALANCE_MAP[tokenInfo.code] ?? "native"]) < priceInToken && (
+          <div
+            style={{
+              fontSize: 12,
+              color: "#ef4444",
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.2)",
+              borderRadius: 8,
+              padding: "8px 12px",
+              marginBottom: 16,
+            }}
+          >
+            Insufficient {tokenInfo.code} balance
+          </div>
+        )}
 
         {/* Success state */}
         {txHash && (
