@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { Wallet, TrendingUp, Music, ArrowDownToLine, Copy, CheckCircle } from "lucide-react";
+import { Wallet, TrendingUp, Music, ArrowDownToLine, Copy, CheckCircle, ExternalLink } from "lucide-react";
 import { useWallet } from "../hooks/useWallet";
+import { useTransactionHistory } from "../hooks/useTransactionHistory";
 import { getEarnings, withdrawEarnings, submitTransaction, listResale } from "../contracts/crate";
 import toast from "react-hot-toast";
 
 export default function Profile() {
   const { address, isConnected, connect, disconnect, signTransaction } = useWallet();
+  const { history, loading: historyLoading } = useTransactionHistory(address);
   const [earnings, setEarnings] = useState<number>(0);
   const [loadingEarnings, setLoadingEarnings] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
@@ -285,6 +287,64 @@ export default function Profile() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Recent Purchases */}
+      <div style={{ marginTop: "40px", maxWidth: "800px" }}>
+        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "16px" }}>Recent Purchases</h2>
+        {historyLoading ? (
+          <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
+            Loading...
+          </div>
+        ) : history.length === 0 ? (
+          <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
+            No purchases yet. Browse the marketplace.
+          </div>
+        ) : (
+          <div className="card" style={{ overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  <th style={{ padding: "12px 16px", textAlign: "left", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Beat</th>
+                  <th style={{ padding: "12px 16px", textAlign: "left", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tier</th>
+                  <th style={{ padding: "12px 16px", textAlign: "left", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Token</th>
+                  <th style={{ padding: "12px 16px", textAlign: "right", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Price</th>
+                  <th style={{ padding: "12px 16px", textAlign: "left", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</th>
+                  <th style={{ padding: "12px 16px", textAlign: "center", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tx</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((record) => (
+                  <tr key={record.txHash} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: "12px 16px" }}>
+                      <span style={{ fontWeight: 600 }}>{record.sampleTitle}</span>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <span style={{ background: "rgba(250,204,21,0.1)", color: "#facc15", padding: "2px 6px", borderRadius: "4px", fontSize: "11px" }}>
+                        {record.tier}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>{record.token}</td>
+                    <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600 }}>{record.price.toFixed(2)}</td>
+                    <td style={{ padding: "12px 16px", color: "var(--text-muted)", fontSize: "12px" }}>
+                      {new Date(record.timestamp).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                      <a
+                        href={`https://stellar.expert/explorer/testnet/tx/${record.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 4 }}
+                      >
+                        <ExternalLink size={12} />
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
