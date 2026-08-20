@@ -2,22 +2,41 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Play, ShoppingCart, Music, ExternalLink } from "lucide-react";
 import { useWallet } from "../hooks/useWallet";
+import { useTransactionHistory } from "../hooks/useTransactionHistory";
 import { getSample, purchaseSample, submitTransaction, stroopsToXlm } from "../contracts/crate";
 import type { SampleData } from "../contracts/crate";
+import { TokenSelector } from "../components/TokenSelector";
+import { PaymentConfirmModal } from "../components/PaymentConfirmModal";
+import { convertToken } from "../services/pricing";
 import toast from "react-hot-toast";
 
 export default function SampleDetail() {
   const { id } = useParams<{ id: string }>();
-  const { address, isConnected, connect, signTransaction } = useWallet();
+  const { address, isConnected, connect, signTransaction, balances } = useWallet();
+  const { addPurchase } = useTransactionHistory(address);
   const [sample, setSample] = useState<SampleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
   const [purchased, setPurchased] = useState(false);
+  const [selectedToken, setSelectedToken] = useState("XLM");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [displayPrice, setDisplayPrice] = useState<number | null>(null);
 
   useEffect(() => {
     if (id && /^\d+$/.test(id)) loadSample();
     else setLoading(false);
   }, [id, address]);
+
+  // Convert price when token selection changes
+  useEffect(() => {
+    if (!sample) return;
+    const priceXlm = parseFloat(stroopsToXlm(sample.lease_price));
+    if (selectedToken === "XLM" || selectedToken === "native") {
+      setDisplayPrice(priceXlm);
+    } else {
+      convertToken(priceXlm, "XLM", selectedToken).then(setDisplayPrice);
+    }
+  }, [sample, selectedToken]);
 
   async function loadSample() {
     setLoading(true);
@@ -32,19 +51,35 @@ export default function SampleDetail() {
     }
   }
 
-  async function handleBuy() {
+  function handleBuyClick() {
     if (!isConnected || !address) {
-      await connect();
+      connect();
       return;
     }
     if (!sample) return;
+    setShowConfirm(true);
+  }
+
+  async function handleConfirmPurchase() {
+    if (!sample || !address) return;
     setBuying(true);
     try {
-      const xdr = await purchaseSample({ buyer: address, sampleId: sample.id });
+      const tokenKey = selectedToken === "XLM" ? "native" : selectedToken;
+      const xdr = await purchaseSample({ buyer: address, sampleId: sample.id, tokenAddress: tokenKey });
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
+      addPurchase({
+        txHash: hash,
+        sampleId: sample.id,
+        sampleTitle: sample.title,
+        tier: "Lease",
+        token: selectedToken,
+        price: displayPrice ?? 0,
+        status: "confirmed",
+      });
       toast.success(`Purchase successful! Tx: ${hash.slice(0, 12)}...`);
       setPurchased(true);
+      setShowConfirm(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Purchase failed");
     } finally {
@@ -73,7 +108,9 @@ export default function SampleDetail() {
   }
 
   const priceXlm = stroopsToXlm(sample.lease_price);
-  const producerEarning = (parseFloat(priceXlm) * 0.9).toFixed(2);
+  const priceNum = parseFloat(priceXlm);
+  const currentPrice = displayPrice ?? priceNum;
+  const producerEarning = (currentPrice * 0.9).toFixed(2);
 
   return (
     <main className="container" style={{ paddingTop: "40px", paddingBottom: "80px", maxWidth: "800px" }}>
@@ -123,8 +160,13 @@ export default function SampleDetail() {
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: "32px", fontWeight: 800, color: "var(--accent)", letterSpacing: "-0.02em" }}>
-              {priceXlm} XLM
+              {currentPrice.toFixed(2)} {selectedToken}
             </div>
+            {selectedToken !== "XLM" && (
+              <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: 4 }}>
+                ({priceXlm} XLM)
+              </div>
+            )}
           </div>
         </div>
 
@@ -179,7 +221,7 @@ export default function SampleDetail() {
           }}
         >
           <span>Producer earns:</span>
-          <span style={{ color: "var(--success)", fontWeight: 600 }}>{producerEarning} XLM (90%)</span>
+          <span style={{ color: "var(--success)", fontWeight: 600 }}>{producerEarning} {selectedToken} (90%)</span>
         </div>
 
         {purchased ? (
@@ -198,17 +240,37 @@ export default function SampleDetail() {
             </a>
           </div>
         ) : (
-          <button
-            className="btn btn-primary btn-lg"
-            onClick={handleBuy}
-            disabled={buying || sample.is_exclusive}
-            style={{ width: "100%" }}
-          >
-            <ShoppingCart size={16} />
-            {buying ? "Processing..." : `Buy for ${priceXlm} XLM`}
-          </button>
+          <>
+            <div style={{ marginBottom: 12 }}>
+              <TokenSelector
+                selected={selectedToken}
+                onSelect={setSelectedToken}
+                balances={balances}
+              />
+            </div>
+            <button
+              className="btn btn-primary btn-lg"
+              onClick={handleBuyClick}
+              disabled={buying || sample.is_exclusive}
+              style={{ width: "100%" }}
+            >
+              <ShoppingCart size={16} />
+              {buying ? "Processing..." : `Pay with ${selectedToken} — ${currentPrice.toFixed(2)} ${selectedToken}`}
+            </button>
+          </>
         )}
       </div>
+
+      <PaymentConfirmModal
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={handleConfirmPurchase}
+        beatTitle={sample.title}
+        tier="Lease"
+        priceInToken={currentPrice}
+        selectedToken={selectedToken}
+        balances={balances}
+      />
     </main>
   );
 }
