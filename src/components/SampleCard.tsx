@@ -17,6 +17,8 @@ interface SampleCardProps {
   owner?: string;
   onBuy?: (id: number, tier: number) => void;
   onBuyResale?: (id: number) => void;
+  xlmBalance?: string;
+  usdcBalance?: string;
 }
 
 const BARS = [40, 65, 50, 80, 45, 70, 55, 75, 42, 68, 52, 78, 46, 72, 58];
@@ -24,7 +26,7 @@ const BARS = [40, 65, 50, 80, 45, 70, 55, 75, 42, 68, 52, 78, 46, 72, 58];
 const EXCLUSIVE_TOOLTIP =
   "This beat was bought as an Exclusive license — the buyer now owns full rights, so it can no longer be purchased on any tier.";
 
-export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiumPrice, exclusivePrice, tokenSymbol = "XLM", isExclusive = false, resalePrice, owner, onBuy, onBuyResale }: SampleCardProps) {
+export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiumPrice, exclusivePrice, tokenSymbol = "XLM", isExclusive = false, resalePrice, owner, onBuy, onBuyResale, xlmBalance, usdcBalance }: SampleCardProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -169,6 +171,21 @@ export function SampleCard({ id, title, producer, genre, bpm, leasePrice, premiu
               style={{ width: "100%", background: selected !== null ? "#facc15" : "#1a1a1a", color: selected !== null ? "#000" : "#525252", border: "none", borderRadius: 12, padding: "11px", fontSize: 14, fontWeight: 700, cursor: selected !== null ? "pointer" : "default", transition: "all 0.15s" }}>
               {selected !== null ? `Buy ${tiers[selected].label} — ${tiers[selected].price} ${tokenSymbol}` : "Select a license tier"}
             </button>
+
+            {(xlmBalance || usdcBalance) && (
+              <div style={{ display: "flex", gap: 8, marginTop: 8, fontSize: 10, color: "#525252" }}>
+                {xlmBalance && (
+                  <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                    <span style={{ fontSize: 11 }}>&#11088;</span> {xlmBalance} XLM
+                  </span>
+                )}
+                {usdcBalance && (
+                  <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                    <span style={{ fontSize: 11 }}>&#128181;</span> {usdcBalance} USDC
+                  </span>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
