@@ -39,8 +39,9 @@ export default function SampleDetail() {
     }
     if (!sample) return;
     setBuying(true);
+    const tokenAddress = (import.meta.env.VITE_XLM_TOKEN_ADDRESS as string) || "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
     try {
-      const xdr = await purchaseSample({ buyer: address, sampleId: sample.id });
+      const xdr = await purchaseSample({ buyer: address, sampleId: sample.id, tokenAddress });
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
       toast.success(`Purchase successful! Tx: ${hash.slice(0, 12)}...`);
@@ -165,22 +166,82 @@ export default function SampleDetail() {
           </a>
         </div>
 
-        <div
-          style={{
-            padding: "12px 16px",
-            background: "rgba(250, 204, 21, 0.05)",
-            border: "1px solid rgba(250, 204, 21, 0.15)",
-            borderRadius: "var(--radius)",
-            marginBottom: "24px",
-            fontSize: "13px",
-            display: "flex",
-            justifyContent: "space-between",
-            color: "var(--text-secondary)",
-          }}
-        >
-          <span>Producer earns:</span>
-          <span style={{ color: "var(--success)", fontWeight: 600 }}>{producerEarning} XLM (90%)</span>
-        </div>
+        {sample.splits && sample.splits.length > 0 ? (
+          <div
+            style={{
+              padding: "16px",
+              background: "rgba(250, 204, 21, 0.05)",
+              border: "1px solid rgba(250, 204, 21, 0.15)",
+              borderRadius: "var(--radius)",
+              marginBottom: "24px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "10px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, fontSize: "13px" }}>
+                <span style={{ color: "var(--primary)" }}>●</span>
+                Collaborative Royalty Splits ({sample.splits.length})
+              </div>
+              <span style={{ color: "var(--success)", fontWeight: 600, fontSize: "12px" }}>
+                {producerEarning} XLM Total Net Pool (90%)
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gap: "6px" }}>
+              {sample.splits.map((s, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontSize: "12px",
+                    color: "var(--text-secondary)",
+                    background: "var(--surface-2)",
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontWeight: 500, color: "var(--text-primary)" }}>{s.role || "Collaborator"}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" }}>
+                      ({s.recipient.slice(0, 4)}...{s.recipient.slice(-4)})
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ color: "var(--text-muted)" }}>{((s.bps || 0) / 100).toFixed(0)}%</span>
+                    <span style={{ fontWeight: 600, color: "var(--success)", fontFamily: "var(--font-mono)" }}>
+                      {((parseFloat(priceXlm) * 0.9 * (s.bps || 0)) / 10000).toFixed(2)} XLM
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              padding: "12px 16px",
+              background: "rgba(250, 204, 21, 0.05)",
+              border: "1px solid rgba(250, 204, 21, 0.15)",
+              borderRadius: "var(--radius)",
+              marginBottom: "24px",
+              fontSize: "13px",
+              display: "flex",
+              justifyContent: "space-between",
+              color: "var(--text-secondary)",
+            }}
+          >
+            <span>Producer earns:</span>
+            <span style={{ color: "var(--success)", fontWeight: 600 }}>{producerEarning} XLM (90%)</span>
+          </div>
+        )}
 
         {purchased ? (
           <div style={{ textAlign: "center", padding: "16px" }}>

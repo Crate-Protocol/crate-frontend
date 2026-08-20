@@ -95,7 +95,10 @@ export function useWallet(): WalletState {
   }, []);
 
   const signTransaction = useCallback(async (xdr: string) => {
-    const { signedTxXdr } = await getKit().signTransaction(xdr, { network: NETWORK });
+    const networkPassphrase = NETWORK === WalletNetwork.PUBLIC
+      ? "Public Global Stellar Network ; September 2015"
+      : "Test SDF Network ; September 2015";
+    const { signedTxXdr } = await getKit().signTransaction(xdr, { networkPassphrase });
     return { signedTxXdr };
   }, []);
 

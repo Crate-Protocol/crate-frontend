@@ -253,6 +253,55 @@ export default function Profile() {
       </div>
 
       <div style={{ marginTop: "40px", maxWidth: "800px" }}>
+        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "16px" }}>Collaborative Beats & Royalty Splits</h2>
+        <div style={{ display: "grid", gap: "12px", marginBottom: "32px" }}>
+          <div className="card" style={{ padding: "18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span style={{ fontWeight: 600, fontSize: "15px" }}>Neon Horizon</span>
+                <span className="badge badge-yellow" style={{ fontSize: "11px" }}>Synthwave</span>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>128 BPM</span>
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)", display: "flex", gap: "12px", alignItems: "center" }}>
+                <span>Role: <strong style={{ color: "var(--text-primary)" }}>Co-Producer</strong></span>
+                <span>•</span>
+                <span>Your Split: <strong style={{ color: "var(--accent)" }}>50%</strong> (5,000 bps)</span>
+                <span>•</span>
+                <span>Total Beat Sales: <strong style={{ color: "var(--success)" }}>450 XLM</strong></span>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: 2 }}>Your Share</div>
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--success)", fontFamily: "var(--font-mono)" }}>
+                202.50 XLM
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: "18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span style={{ fontWeight: 600, fontSize: "15px" }}>Astral Drift</span>
+                <span className="badge badge-yellow" style={{ fontSize: "11px" }}>Lo-Fi</span>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>84 BPM</span>
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)", display: "flex", gap: "12px", alignItems: "center" }}>
+                <span>Role: <strong style={{ color: "var(--text-primary)" }}>Mixing & Mastering</strong></span>
+                <span>•</span>
+                <span>Your Split: <strong style={{ color: "var(--accent)" }}>20%</strong> (2,000 bps)</span>
+                <span>•</span>
+                <span>Total Beat Sales: <strong style={{ color: "var(--success)" }}>180 XLM</strong></span>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: 2 }}>Your Share</div>
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--success)", fontFamily: "var(--font-mono)" }}>
+                32.40 XLM
+              </div>
+            </div>
+          </div>
+        </div>
+
         <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "16px" }}>Owned Exclusive Beats</h2>
         {ownedBeats.length === 0 ? (
           <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>

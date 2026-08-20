@@ -7,6 +7,12 @@ import {
   Address,
 } from "@stellar/stellar-sdk";
 
+export interface RoyaltySplit {
+  recipient: string;
+  bps: number; // 10,000 basis points = 100%
+  role?: string;
+}
+
 export interface SampleData {
   id:              number;
   uploader:        string;
@@ -21,6 +27,62 @@ export interface SampleData {
   is_exclusive:    boolean;
   resale_price?:   bigint;
   total_sales:     number;
+  splits?:         RoyaltySplit[];
+}
+
+export function validateSplits(splits: RoyaltySplit[]): {
+  valid: boolean;
+  totalBps: number;
+  remainingBps: number;
+  error?: string;
+} {
+  if (!splits || splits.length === 0) {
+    return { valid: false, totalBps: 0, remainingBps: 10000, error: "At least one recipient is required" };
+  }
+
+  let totalBps = 0;
+  for (const s of splits) {
+    if (!s.recipient || !s.recipient.trim()) {
+      return { valid: false, totalBps, remainingBps: 10000 - totalBps, error: "Recipient address cannot be empty" };
+    }
+    if (s.bps <= 0 || s.bps > 10000) {
+      return { valid: false, totalBps, remainingBps: 10000 - totalBps, error: "Each split share must be between 0.01% and 100%" };
+    }
+    totalBps += s.bps;
+  }
+
+  const remainingBps = 10000 - totalBps;
+  if (totalBps !== 10000) {
+    return {
+      valid: false,
+      totalBps,
+      remainingBps,
+      error: `Splits must sum to exactly 100% (currently ${(totalBps / 100).toFixed(2)}%)`,
+    };
+  }
+
+  return { valid: true, totalBps, remainingBps: 0 };
+}
+
+export function calculateSplitPayouts(
+  totalStroops: bigint,
+  splits: RoyaltySplit[]
+): Array<{ recipient: string; bps: number; amountStroops: bigint; role?: string }> {
+  if (!splits || splits.length === 0) return [];
+  
+  let distributed = 0n;
+  const results = splits.map((s, index) => {
+    // For the last collaborator, distribute the exact remaining stroops to eliminate rounding drift
+    if (index === splits.length - 1) {
+      const remaining = totalStroops - distributed;
+      return { recipient: s.recipient, bps: s.bps, amountStroops: remaining, role: s.role };
+    }
+    const share = (totalStroops * BigInt(s.bps)) / 10000n;
+    distributed += share;
+    return { recipient: s.recipient, bps: s.bps, amountStroops: share, role: s.role };
+  });
+
+  return results;
 }
 
 export function stroopsToXlm(stroops: bigint): string {
@@ -111,9 +173,9 @@ export async function getSample(sourceAddress: string, sampleId: bigint): Promis
 }
 
 export async function submitTransaction(signed: { signedTxXdr: string }): Promise<string> {
-  const { StellarBase } = await import("@stellar/stellar-sdk");
-  const tx = StellarBase.TransactionEnvelope.fromXDR(signed.signedTxXdr, "base64");
-  const result = await server().sendTransaction(tx as Parameters<typeof server>["prototype"]["sendTransaction"][0]);
+  const tx = TransactionBuilder.fromXDR(signed.signedTxXdr, NETWORK_PASS);
+  const s = server();
+  const result = await s.sendTransaction(tx as any);
   if (result.status === "ERROR") throw new Error("Transaction submission failed");
   return result.hash;
 }
@@ -121,6 +183,7 @@ export async function submitTransaction(signed: { signedTxXdr: string }): Promis
 export async function uploadSample(params: {
   uploader: string; title: string; ipfsCid: string;
   priceXlm: number; genre: string; bpm: number;
+  splits?: RoyaltySplit[];
 }): Promise<string> {
   const src = await server().getAccount(params.uploader);
   const c   = new Contract(CONTRACT_ID);
