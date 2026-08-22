@@ -7,7 +7,7 @@ import { getSample, purchaseSample, submitTransaction, stroopsToXlm } from "../c
 import type { SampleData } from "../contracts/crate";
 import { TokenSelector } from "../components/TokenSelector";
 import { PaymentConfirmModal } from "../components/PaymentConfirmModal";
-import { CrossChainPaymentModal } from "../components/CrossChainPaymentModal";
+import CrossChainPaymentModal from "../components/CrossChainPaymentModal";
 import { convertToken } from "../services/pricing";
 import { USDC_ISSUER, YXLM_ISSUER } from "../constants/tokens";
 import toast from "react-hot-toast";
