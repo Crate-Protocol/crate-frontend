@@ -57,7 +57,9 @@ function writeToURL(filters: FilterState) {
 
   const qs = p.toString();
   const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-  window.history.replaceState(null, '', url);
+  if (url !== window.location.pathname + window.location.search) {
+    window.history.pushState(null, '', url);
+  }
 }
 
 export function useFilters() {

@@ -59,10 +59,18 @@ function DualRange({ min, max, valueMin, valueMax, onChange, step = 1 }: {
   useEffect(() => {
     if (!dragging) return;
     const onMove = (e: MouseEvent) => handleMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); handleMove(e.touches[0].clientX); };
     const onUp = () => setDragging(null);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onUp);
+    };
   }, [dragging, handleMove]);
 
   return (
@@ -76,13 +84,13 @@ function DualRange({ min, max, valueMin, valueMax, onChange, step = 1 }: {
         className="absolute w-4 h-4 bg-white rounded-full shadow-lg border-2 border-yellow-400 -translate-x-1/2 z-10"
         style={{ left: `${getPercent(valueMin)}%` }}
         onMouseDown={(e) => { e.stopPropagation(); setDragging('min'); }}
-        onTouchStart={() => setDragging('min')}
+        onTouchStart={(e) => { e.stopPropagation(); setDragging('min'); }}
       />
       <div
         className="absolute w-4 h-4 bg-white rounded-full shadow-lg border-2 border-yellow-400 -translate-x-1/2 z-10"
         style={{ left: `${getPercent(valueMax)}%` }}
         onMouseDown={(e) => { e.stopPropagation(); setDragging('max'); }}
-        onTouchStart={() => setDragging('max')}
+        onTouchStart={(e) => { e.stopPropagation(); setDragging('max'); }}
       />
     </div>
   );

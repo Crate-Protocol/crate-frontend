@@ -42,10 +42,10 @@ function matchesPrice(s: SampleData, min: number, max: number): boolean {
 
 function matchesLicense(s: SampleData, f: FilterState): boolean {
   if (!f.hasLease && !f.hasPremium && !f.hasExclusive) return true;
-  if (f.hasLease && s.leasePrice > 0) return true;
-  if (f.hasPremium && s.premiumPrice > 0) return true;
-  if (f.hasExclusive && s.exclusivePrice > 0 && !s.isExclusive) return true;
-  return false;
+  if (f.hasLease && s.leasePrice <= 0) return false;
+  if (f.hasPremium && s.premiumPrice <= 0) return false;
+  if (f.hasExclusive && (s.exclusivePrice <= 0 || s.isExclusive)) return false;
+  return true;
 }
 
 function sortSamples(samples: SampleData[], sort: string): SampleData[] {
