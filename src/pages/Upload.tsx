@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Upload as UploadIcon, Music, X, CheckCircle } from "lucide-react";
 import { useWallet } from "../hooks/useWallet";
 import { uploadSample, submitTransaction } from "../contracts/crate";
+import { recordUploadedBeat } from "../services/analytics";
 import toast from "react-hot-toast";
 
 const GENRES = ["Hip-Hop", "Trap", "Lo-Fi", "R&B", "Drill", "Afrobeats", "Pop", "House", "Reggaeton", "Other"];
@@ -125,6 +126,17 @@ export default function Upload() {
 
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
+      recordUploadedBeat(address, {
+        id: Date.now(),
+        title: form.title.trim(),
+        genre: form.genre,
+        bpm: bpmNum,
+        totalSales: 0,
+        revenue: 0,
+        avgPrice: priceNum,
+        lastSold: null,
+        status: "Active",
+      });
       toast.success(`Beat listed! Tx: ${hash.slice(0, 12)}...`);
       setStep("done");
     } catch (err) {
