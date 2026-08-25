@@ -9,6 +9,7 @@ import { TokenSelector } from "../components/TokenSelector";
 import { PaymentConfirmModal } from "../components/PaymentConfirmModal";
 import CrossChainPaymentModal from "../components/CrossChainPaymentModal";
 import { convertToken } from "../services/pricing";
+import { recordSale } from "../services/analytics";
 import { USDC_ISSUER, YXLM_ISSUER } from "../constants/tokens";
 import toast from "react-hot-toast";
 
@@ -89,6 +90,18 @@ export default function SampleDetail() {
         price: displayPrice ?? 0,
         status: "confirmed",
       });
+      if (sample.uploader) {
+        recordSale(sample.uploader, {
+          txHash: hash,
+          sampleId: sample.id,
+          sampleTitle: sample.title,
+          buyer: address,
+          tier: (TIER_LABELS[selectedTier] || "lease").toLowerCase() as any,
+          amount: (displayPrice ?? 0).toFixed(2),
+          token: selectedToken,
+          timestamp: Date.now(),
+        });
+      }
       toast.success(`Purchase successful! Tx: ${hash.slice(0, 12)}...`);
       setPurchased(true);
       return hash;

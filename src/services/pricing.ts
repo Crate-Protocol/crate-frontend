@@ -1,4 +1,4 @@
-import { Horizon } from "@stellar/stellar-sdk";
+import { Horizon, Asset } from "@stellar/stellar-sdk";
 import { USDC_ISSUER, YXLM_ISSUER, TOKEN_DECIMALS } from "../constants/tokens";
 
 const HORIZON_URL =
@@ -42,8 +42,8 @@ export async function getUSDPrice(tokenCode: string): Promise<number> {
       const server = new Horizon.Server(HORIZON_URL);
       const orderbook = await server
         .orderbook(
-          { type: "native" },
-          { code: "USD", issuer: USDC_ISSUER }
+          Asset.native(),
+          new Asset("USDC", USDC_ISSUER)
         )
         .limit(1)
         .call();

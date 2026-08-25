@@ -128,6 +128,7 @@ export interface CCTPTransfer {
   amount: string;          // Human-readable USDC amount (e.g. "10.50")
   amountRaw: string;       // Raw value with 6 decimals (e.g. "10500000")
   sourceTxHash?: string;
+  messageHash?: string;
   attestationId?: string;
   attestation?: string;
   messageBytes?: string;

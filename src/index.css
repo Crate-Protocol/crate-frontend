@@ -293,3 +293,15 @@ select {
   background-position: right 12px center;
   padding-right: 36px !important;
 }
+
+/* ─── Dashboard Responsive Styles ────────────────────────────────────── */
+@media (max-width: 960px) {
+  .dashboard-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.hover-underline:hover {
+  text-decoration: underline;
+}
+

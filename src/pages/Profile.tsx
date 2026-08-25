@@ -1,65 +1,118 @@
-import { useState, useEffect } from "react";
-import { Wallet, TrendingUp, Music, ArrowDownToLine, Copy, CheckCircle, ExternalLink } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  Wallet,
+  Coins,
+  TrendingUp,
+  ShoppingBag,
+  ArrowDownToLine,
+  Copy,
+  CheckCircle2,
+  ExternalLink,
+  PlusCircle,
+  Music,
+  ShieldCheck,
+  Tag,
+} from "lucide-react";
 import { useWallet } from "../hooks/useWallet";
-import { useTransactionHistory } from "../hooks/useTransactionHistory";
-import { getEarnings, withdrawEarnings, submitTransaction, listResale } from "../contracts/crate";
+import { useProducerStats } from "../hooks/useProducerStats";
+import { useSalesFeed } from "../hooks/useSalesFeed";
+import StatsCard from "../components/StatsCard";
+import RevenueChart from "../components/RevenueChart";
+import BeatPerformanceTable from "../components/BeatPerformanceTable";
+import SalesFeed from "../components/SalesFeed";
+import WithdrawalHistory from "../components/WithdrawalHistory";
+import {
+  withdrawEarnings,
+  submitTransaction,
+  listResale,
+} from "../contracts/crate";
+import { recordWithdrawal } from "../services/analytics";
 import toast from "react-hot-toast";
 
-const EXPLORER_NETWORK = import.meta.env.VITE_NETWORK === "MAINNET" ? "public" : "testnet";
+const EXPLORER_NETWORK =
+  import.meta.env.VITE_NETWORK === "MAINNET" ? "public" : "testnet";
 
 export default function Profile() {
-  const { address, isConnected, connect, disconnect, signTransaction } = useWallet();
-  const { history, loading: historyLoading } = useTransactionHistory(address);
-  const [earnings, setEarnings] = useState<number>(0);
-  const [loadingEarnings, setLoadingEarnings] = useState(false);
+  const { address, isConnected, connect, disconnect, signTransaction } =
+    useWallet();
+
+  const {
+    stats,
+    beats,
+    withdrawals,
+    salesByDay30,
+    salesByDay90,
+    salesByDay365,
+    loading: statsLoading,
+    refetch: refetchStats,
+  } = useProducerStats(address);
+
+  const {
+    sales: feedSales,
+    newSaleCount,
+    markAsRead,
+    refetch: refetchSalesFeed,
+  } = useSalesFeed(address);
+
   const [withdrawing, setWithdrawing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [ownedBeats, setOwnedBeats] = useState<any[]>([]);
 
   useEffect(() => {
     if (address) {
-      loadEarnings();
-      // Mock loading owned beats
+      // Load sample owned exclusive beats for the wallet
       setOwnedBeats([
-        { id: 8, title: "Summer Breeze", genre: "Pop", bpm: 120, isExclusive: true, resalePrice: undefined },
-        { id: 7, title: "Night Walk", genre: "R&B", bpm: 95, isExclusive: true, resalePrice: 800 }
+        {
+          id: 8,
+          title: "Summer Breeze",
+          genre: "Pop",
+          bpm: 120,
+          isExclusive: true,
+          resalePrice: undefined,
+        },
+        {
+          id: 7,
+          title: "Night Walk",
+          genre: "R&B",
+          bpm: 95,
+          isExclusive: true,
+          resalePrice: 800,
+        },
       ]);
     }
   }, [address]);
 
-  async function loadEarnings() {
-    if (!address) return;
-    setLoadingEarnings(true);
-    try {
-      const e = await getEarnings(address);
-      setEarnings(e);
-    } catch {
-      toast.error("Failed to load earnings");
-    } finally {
-      setLoadingEarnings(false);
-    }
-  }
-
   async function handleWithdraw() {
     if (!address) return;
-    if (earnings === 0) {
-      toast.error("No earnings to withdraw");
+    if (stats.pendingBalance <= 0) {
+      toast.error("No pending earnings to withdraw");
       return;
     }
+
     setWithdrawing(true);
-    const tokenAddress = import.meta.env.VITE_XLM_TOKEN_ADDRESS as string | undefined;
-    if (!tokenAddress) {
-      toast.error("XLM token address not configured");
-      setWithdrawing(false);
-      return;
-    }
+    const tokenAddress =
+      (import.meta.env.VITE_XLM_TOKEN_ADDRESS as string) ||
+      "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+
     try {
       const xdr = await withdrawEarnings(address, tokenAddress);
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
-      toast.success(`Withdrawal successful! Tx: ${hash.slice(0, 12)}...`);
-      setEarnings(0);
+
+      // Record withdrawal in local store
+      recordWithdrawal(address, {
+        txHash: hash,
+        amount: stats.pendingBalance.toFixed(2),
+        timestamp: Date.now(),
+        status: "confirmed",
+      });
+
+      toast.success(`Withdrawal successful! Tx: ${hash.slice(0, 10)}...`);
+      await refetchStats();
+      refetchSalesFeed();
     } catch (err) {
+      console.error("Withdrawal error:", err);
       toast.error(err instanceof Error ? err.message : "Withdrawal failed");
     } finally {
       setWithdrawing(false);
@@ -82,206 +135,401 @@ export default function Profile() {
       toast.error("Invalid price");
       return;
     }
-    
+
     try {
       const xdr = await listResale({ owner: address, sampleId, priceXlm });
       const signed = await signTransaction(xdr);
       const hash = await submitTransaction(signed);
       toast.success(`Listed for resale! Tx: ${hash.slice(0, 12)}...`);
-      setOwnedBeats(beats => beats.map(b => b.id === sampleId ? { ...b, resalePrice: priceXlm } : b));
+      setOwnedBeats((prev) =>
+        prev.map((b) => (b.id === sampleId ? { ...b, resalePrice: priceXlm } : b))
+      );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to list for resale");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to list for resale"
+      );
     }
   }
 
-  if (!isConnected) {
+  if (!isConnected || !address) {
     return (
       <main
         className="container"
         style={{
-          paddingTop: "80px",
-          paddingBottom: "80px",
+          paddingTop: "96px",
+          paddingBottom: "96px",
           maxWidth: "560px",
           textAlign: "center",
         }}
       >
-        <Wallet size={48} color="var(--text-muted)" style={{ margin: "0 auto 20px" }} />
-        <h2 style={{ fontSize: "22px", fontWeight: 700, marginBottom: 10 }}>Connect Your Wallet</h2>
-        <p style={{ color: "var(--text-secondary)", marginBottom: 28, fontSize: "14px" }}>
-          Connect Freighter to view your producer profile, earnings, and uploaded beats.
+        <div
+          style={{
+            width: "72px",
+            height: "72px",
+            borderRadius: "20px",
+            background: "rgba(250, 204, 21, 0.1)",
+            border: "1px solid rgba(250, 204, 21, 0.25)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 24px",
+            color: "var(--accent)",
+          }}
+        >
+          <Wallet size={36} />
+        </div>
+        <h1 style={{ fontSize: "28px", fontWeight: 800, marginBottom: "12px" }}>
+          Producer Dashboard
+        </h1>
+        <p
+          style={{
+            color: "var(--text-secondary)",
+            marginBottom: "32px",
+            fontSize: "15px",
+            lineHeight: 1.6,
+          }}
+        >
+          Connect your Stellar wallet to access sales analytics, track beat performance, manage revenue, and withdraw payouts.
         </p>
-        <button className="btn btn-primary btn-lg" onClick={connect}>
-          Connect Freighter
+        <button
+          className="btn btn-primary btn-lg"
+          onClick={() => connect()}
+          style={{ gap: "10px" }}
+        >
+          <Wallet size={16} />
+          Connect Wallet
         </button>
       </main>
     );
   }
 
+  const shortAddress = `${address.slice(0, 6)}...${address.slice(-6)}`;
+
   return (
-    <main className="container" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
-      <div style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: 800, marginBottom: "8px" }}>Profile</h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
-          Your producer dashboard
-        </p>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", maxWidth: "800px" }}>
-        {/* Wallet card */}
-        <div className="card" style={{ padding: "24px", gridColumn: "1 / -1" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "var(--text-muted)",
-                  fontFamily: "var(--font-mono)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  marginBottom: "6px",
-                }}
-              >
-                Stellar Address
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "13px",
-                  color: "var(--text-primary)",
-                  wordBreak: "break-all",
-                }}
-              >
-                {address}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0, marginLeft: 16 }}>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={copyAddress}
-                style={{ gap: 6 }}
-              >
-                {copied ? <CheckCircle size={13} color="var(--success)" /> : <Copy size={13} />}
-                {copied ? "Copied" : "Copy"}
-              </button>
-              <button className="btn btn-secondary btn-sm" onClick={disconnect}>
-                Disconnect
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Earnings card */}
-        <div className="card" style={{ padding: "24px" }}>
-          <div
+    <main
+      className="container"
+      style={{
+        paddingTop: "36px",
+        paddingBottom: "80px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "28px",
+      }}
+    >
+      {/* ─── Dashboard Header ────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "16px",
+        }}
+      >
+        <div>
+          <h1
             style={{
-              fontSize: "11px",
-              color: "var(--text-muted)",
-              fontFamily: "var(--font-mono)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: "12px",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
+              fontSize: "28px",
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              margin: 0,
             }}
           >
-            <TrendingUp size={12} />
-            Pending Earnings
-          </div>
+            Producer Dashboard
+          </h1>
+          <p
+            style={{
+              color: "var(--text-secondary)",
+              fontSize: "14px",
+              marginTop: "4px",
+              margin: 0,
+            }}
+          >
+            Sales analytics, revenue metrics, and beat performance for your catalog
+          </p>
+        </div>
 
-          {loadingEarnings ? (
-            <div className="skeleton" style={{ height: 40, width: 120 }} />
-          ) : (
-            <div
+        {/* Wallet & Quick Action Bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              padding: "6px 12px",
+              fontSize: "13px",
+            }}
+          >
+            <span
               style={{
-                fontSize: "36px",
-                fontWeight: 800,
-                color: earnings > 0 ? "var(--accent)" : "var(--text-muted)",
-                letterSpacing: "-0.02em",
-                marginBottom: "4px",
+                fontFamily: "var(--font-mono)",
+                fontWeight: 600,
+                color: "var(--text-primary)",
               }}
             >
-              {earnings.toFixed(2)}
-            </div>
-          )}
-          <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "20px" }}>
-            XLM available
+              {shortAddress}
+            </span>
+
+            <button
+              onClick={copyAddress}
+              style={{
+                background: "none",
+                border: "none",
+                color: copied ? "var(--success)" : "var(--text-muted)",
+                cursor: "pointer",
+                padding: "2px",
+                display: "flex",
+                alignItems: "center",
+              }}
+              title="Copy full address"
+            >
+              {copied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
+            </button>
+
+            <a
+              href={`https://stellar.expert/explorer/${EXPLORER_NETWORK}/account/${address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: "var(--text-muted)",
+                display: "flex",
+                alignItems: "center",
+              }}
+              title="View on Stellar Expert"
+            >
+              <ExternalLink size={13} />
+            </a>
           </div>
 
-          <button
-            className="btn btn-primary"
-            onClick={handleWithdraw}
-            disabled={withdrawing || earnings === 0}
-            style={{ width: "100%" }}
+          <Link
+            to="/upload"
+            className="btn btn-primary btn-sm"
+            style={{ gap: "6px" }}
           >
-            <ArrowDownToLine size={14} />
-            {withdrawing ? "Withdrawing..." : "Withdraw to Wallet"}
-          </button>
-        </div>
-
-        {/* Network card */}
-        <div className="card" style={{ padding: "24px" }}>
-          <div
-            style={{
-              fontSize: "11px",
-              color: "var(--text-muted)",
-              fontFamily: "var(--font-mono)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: "12px",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <Music size={12} />
-            Contract Info
-          </div>
-          <div style={{ fontSize: "13px", lineHeight: 1.8, color: "var(--text-secondary)" }}>
-            <div style={{ marginBottom: 6 }}>
-              <span style={{ color: "var(--text-muted)" }}>Network: </span>
-              <span className="badge badge-green">Testnet</span>
-            </div>
-            <div style={{ marginBottom: 6 }}>
-              <span style={{ color: "var(--text-muted)" }}>Revenue split: </span>
-              <span style={{ color: "var(--accent)", fontWeight: 600 }}>90% to you</span>
-            </div>
-            <div>
-              <span style={{ color: "var(--text-muted)" }}>Contract: </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px" }}>
-                CA7DGEWW...DTLG
-              </span>
-            </div>
-          </div>
+            <PlusCircle size={14} />
+            Upload Beat
+          </Link>
         </div>
       </div>
 
-      <div style={{ marginTop: "40px", maxWidth: "800px" }}>
-        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "16px" }}>Owned Exclusive Beats</h2>
+      {/* ─── Row 1: Four Stat Cards ───────────────────────────────────────── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          gap: "16px",
+        }}
+      >
+        {/* Total Earned (Lifetime) */}
+        <StatsCard
+          title="Total Earned"
+          value={stats.totalEarned.toLocaleString()}
+          unit="XLM"
+          subtext="Lifetime net revenue"
+          growth={stats.monthlyGrowth}
+          sparkline={stats.sparklineEarned}
+          icon={<Coins size={16} />}
+        />
+
+        {/* This Month */}
+        <StatsCard
+          title="This Month"
+          value={stats.thisMonthEarned.toLocaleString()}
+          unit="XLM"
+          subtext="Net earnings this month"
+          growth={stats.monthlyGrowth}
+          sparkline={stats.sparklineMonthly}
+          icon={<TrendingUp size={16} />}
+        />
+
+        {/* Pending Balance */}
+        <StatsCard
+          title="Pending Balance"
+          value={stats.pendingBalance.toFixed(2)}
+          unit="XLM"
+          subtext="Ready for withdrawal"
+          sparkline={stats.sparklinePending}
+          icon={<ArrowDownToLine size={16} />}
+          action={{
+            label: "Withdraw to Wallet",
+            onClick: handleWithdraw,
+            disabled: stats.pendingBalance <= 0 || withdrawing,
+            loading: withdrawing,
+            icon: <ArrowDownToLine size={13} />,
+          }}
+        />
+
+        {/* Total Sales */}
+        <StatsCard
+          title="Total Sales"
+          value={stats.totalSales}
+          subtext={`${stats.salesThisWeek} sales this week`}
+          growth={stats.salesGrowth}
+          sparkline={stats.sparklineSales}
+          icon={<ShoppingBag size={16} />}
+        />
+      </div>
+
+      {/* ─── Row 2: Revenue Chart ─────────────────────────────────────────── */}
+      <RevenueChart
+        data30={salesByDay30}
+        data90={salesByDay90}
+        data365={salesByDay365}
+      />
+
+      {/* ─── Row 3: Beat Performance & Recent Sales Feed ──────────────────── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.4fr 1fr",
+          gap: "20px",
+          alignItems: "stretch",
+        }}
+        className="dashboard-two-col"
+      >
+        {/* Left: Beat Performance Table */}
+        <BeatPerformanceTable
+          beats={beats}
+          topBeatId={stats.topBeat?.id}
+        />
+
+        {/* Right: Recent Sales Feed */}
+        <SalesFeed
+          sales={feedSales}
+          newSaleCount={newSaleCount}
+          onClearNewCount={markAsRead}
+          explorerNetwork={EXPLORER_NETWORK}
+        />
+      </div>
+
+      {/* ─── Row 4: Withdrawal History ────────────────────────────────────── */}
+      <WithdrawalHistory
+        withdrawals={withdrawals}
+        pendingEarnings={stats.pendingBalance}
+        onWithdraw={handleWithdraw}
+        withdrawing={withdrawing}
+        explorerNetwork={EXPLORER_NETWORK}
+      />
+
+      {/* ─── Row 5: Owned Exclusive Beats & Secondary Resale ──────────────── */}
+      <div
+        className="card"
+        style={{
+          padding: "24px",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px",
+        }}
+      >
+        <div style={{ marginBottom: "16px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "16px",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+            }}
+          >
+            <Tag size={18} style={{ color: "var(--accent)" }} />
+            Owned Exclusive Beats
+          </div>
+          <p
+            style={{
+              fontSize: "12px",
+              color: "var(--text-secondary)",
+              margin: "2px 0 0",
+            }}
+          >
+            Exclusive licenses owned by this wallet eligible for secondary resale
+          </p>
+        </div>
+
         {ownedBeats.length === 0 ? (
-          <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
-            No exclusive beats owned yet.
+          <div
+            style={{
+              padding: "32px",
+              textAlign: "center",
+              color: "var(--text-muted)",
+              background: "var(--surface-2)",
+              borderRadius: "10px",
+            }}
+          >
+            No exclusive beats owned yet. Explore the marketplace for exclusive releases.
           </div>
         ) : (
-          <div style={{ display: "grid", gap: "12px" }}>
-            {ownedBeats.map(beat => (
-              <div key={beat.id} className="card" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "grid", gap: "10px" }}>
+            {ownedBeats.map((beat) => (
+              <div
+                key={beat.id}
+                style={{
+                  padding: "14px 18px",
+                  borderRadius: "10px",
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--border)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                }}
+              >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: "15px", marginBottom: "4px" }}>{beat.title}</div>
-                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", display: "flex", gap: "8px" }}>
-                    <span style={{ background: "rgba(250,204,21,0.1)", color: "#facc15", padding: "2px 6px", borderRadius: "4px" }}>{beat.genre}</span>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      marginBottom: "4px",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {beat.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-secondary)",
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        background: "rgba(250, 204, 21, 0.1)",
+                        color: "var(--accent)",
+                        padding: "1px 6px",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                      }}
+                    >
+                      {beat.genre}
+                    </span>
                     <span>{beat.bpm} BPM</span>
                   </div>
                 </div>
+
                 <div>
                   {beat.resalePrice ? (
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#3b82f6" }}>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#60a5fa",
+                        fontFamily: "var(--font-mono)",
+                      }}
+                    >
                       Listed for {beat.resalePrice} XLM
                     </div>
                   ) : (
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => handleListResale(beat.id)}
+                      style={{ fontSize: "12px" }}
                     >
                       List for Resale
                     </button>
@@ -289,64 +537,6 @@ export default function Profile() {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-      </div>
-
-      {/* Recent Purchases */}
-      <div style={{ marginTop: "40px", maxWidth: "800px" }}>
-        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "16px" }}>Recent Purchases</h2>
-        {historyLoading ? (
-          <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
-            Loading...
-          </div>
-        ) : history.length === 0 ? (
-          <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
-            No purchases yet. Browse the marketplace.
-          </div>
-        ) : (
-          <div className="card" style={{ overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Beat</th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tier</th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Token</th>
-                  <th style={{ padding: "12px 16px", textAlign: "right", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Price</th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</th>
-                  <th style={{ padding: "12px 16px", textAlign: "center", color: "var(--text-muted)", fontWeight: 600, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tx</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((record) => (
-                  <tr key={record.txHash} style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span style={{ fontWeight: 600 }}>{record.sampleTitle}</span>
-                    </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span style={{ background: "rgba(250,204,21,0.1)", color: "#facc15", padding: "2px 6px", borderRadius: "4px", fontSize: "11px" }}>
-                        {record.tier}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>{record.token}</td>
-                    <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600 }}>{record.price.toFixed(2)}</td>
-                    <td style={{ padding: "12px 16px", color: "var(--text-muted)", fontSize: "12px" }}>
-                      {new Date(record.timestamp).toLocaleDateString()}
-                    </td>
-                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                      <a
-                        href={`https://stellar.expert/explorer/${EXPLORER_NETWORK}/tx/${record.txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 4 }}
-                      >
-                        <ExternalLink size={12} />
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         )}
       </div>
