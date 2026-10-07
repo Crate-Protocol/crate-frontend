@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "node init && vite",
+    "build": "node init && tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint ."
   },
@@ -13,7 +13,9 @@
     "@creit.tech/stellar-wallets-kit": "^1.9.5",
     "@stellar/stellar-sdk": "^14.5.0",
     "axios": "^1.9.0",
+    "dotenv": "^8.2.0",
     "lucide-react": "^1.1.0",
+    "node-fetch": "^3.3.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.0",
